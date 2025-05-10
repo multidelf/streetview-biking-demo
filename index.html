@@ -29,10 +29,13 @@
 <body>
   <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V6.6</div>
   <div id="controlPanel">
-    <label for="modeSelect">📌 選擇路線輸入方式</label>
+    <label for="modeSelect">📌 選擇輸入模式</label>
     <select id="modeSelect">
       <option value="sheet">🔽 路線下拉選單</option>
+      <option value="paste">📝 貼上經緯度</option>
+      <option value="ab">📍 A → B 搜尋</option>
     </select>
+
     <div class="mode-block" id="sheetBlock">
       <select id="routeSelect"><option>請選擇路線</option></select>
       <div style="display:flex; gap:10px; margin-top:6px;">
@@ -40,6 +43,18 @@
         <button onclick="clearAll()">取消全選</button>
       </div>
       <div id="pointList" style="margin-top:10px; max-height:220px; overflow:auto;"></div>
+    </div>
+
+    <div class="mode-block" id="pasteBlock">
+      <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：
+24.1612666,120.6951848"></textarea>
+      <button onclick="drawFromPasted()">➕ 繪製標記</button>
+    </div>
+
+    <div class="mode-block" id="abBlock">
+      <input id="pointA" placeholder="起點地名或地址" />
+      <input id="pointB" placeholder="終點地名或地址" />
+      <button onclick="drawFromAB()">🧭 搜尋路線標記</button>
     </div>
   </div>
   <div id="map"></div>
@@ -66,17 +81,14 @@
           infoWindow.setContent(`[#${p.order}] ${p.name}`);
           infoWindow.open(map, marker);
         });
-        console.log(`🟢 加入 marker：${p.name} (${p.lat}, ${p.lng})`);
         map.setCenter(marker.getPosition());
       } else {
-        if (cb._marker) {
-          cb._marker.setMap(null);
-          console.log(`🔴 移除 marker：${p.name}`);
-        }
+        if (cb._marker) cb._marker.setMap(null);
       }
     }
     function clearMarkers() {
-      document.getElementById("pointList").innerHTML = "";
+      markers.forEach(m => m.setMap(null));
+      markers.length = 0;
     }
     async function fetchRouteNames() {
       const res = await fetch(apiBase);
@@ -89,11 +101,11 @@
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const data = await res.json();
       const points = data.points;
-      clearMarkers();
       const list = document.getElementById("pointList");
+      list.innerHTML = "";
       points.forEach(p => {
-        const id = `pt_${p.order}`;
         const row = document.createElement("div");
+        const id = `pt_${p.order}`;
         row.innerHTML = `<label><input type="checkbox" id="${id}">[#${p.order}] ${p.name} (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})</label>`;
         const cb = row.querySelector("input");
         cb.addEventListener("change", () => toggleMarker(cb, p));
@@ -106,10 +118,55 @@
     function clearAll() {
       document.querySelectorAll("#pointList input[type=checkbox]").forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event("change")); });
     }
+    function drawFromPasted() {
+      const raw = document.getElementById("coordTextarea").value.trim();
+      const lines = raw.split("\n");
+      const path = lines.map((line, idx) => {
+        const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
+        return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]), name: `手動點 #${idx + 1}` } : null;
+      }).filter(Boolean);
+      clearMarkers();
+      path.forEach(p => {
+        const marker = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map });
+        marker.addListener("click", () => {
+          infoWindow.setContent(p.name);
+          infoWindow.open(map, marker);
+        });
+        markers.push(marker);
+      });
+      if (path[0]) map.setCenter({ lat: path[0].lat, lng: path[0].lng });
+    }
+    function drawFromAB() {
+      const service = new google.maps.DirectionsService();
+      service.route({
+        origin: document.getElementById("pointA").value,
+        destination: document.getElementById("pointB").value,
+        travelMode: "BICYCLING"
+      }, (res, status) => {
+        if (status === "OK") {
+          const path = res.routes[0].overview_path;
+          clearMarkers();
+          path.forEach((p, i) => {
+            const marker = new google.maps.Marker({ position: p, map });
+            marker.addListener("click", () => {
+              infoWindow.setContent(`路線點 #${i + 1}`);
+              infoWindow.open(map, marker);
+            });
+            markers.push(marker);
+          });
+          map.setCenter(path[0]);
+        } else {
+          alert("搜尋失敗：" + status);
+        }
+      });
+    }
+    document.getElementById("modeSelect").addEventListener("change", (e) => {
+      document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
+      document.getElementById(e.target.value + "Block").style.display = "block";
+    });
     window.onload = () => {
       initMap();
       fetchRouteNames();
-      document.getElementById("modeSelect").dispatchEvent(new Event("change"));
       document.getElementById("sheetBlock").style.display = "block";
     };
   </script>
