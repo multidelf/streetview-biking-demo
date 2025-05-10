@@ -96,7 +96,7 @@
       const res = await fetch(apiBase);
       const data = await res.json();
       const sel = document.getElementById("routeSelect");
-      sel.innerHTML = `<option>請選擇路線</option>` + data.routes.map(name => `<option value="\${name}">\${name}</option>`).join("");
+      sel.innerHTML = `<option>請選擇路線</option>` + data.routes.map(name => `<option value="${name}">${name}</option>`).join("");
       sel.addEventListener("change", () => fetchRouteByName(sel.value));
     }
     async function fetchRouteByName(name) {
