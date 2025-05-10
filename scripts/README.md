@@ -1,1 +1,1 @@
-# scripts folder
+# scripts 資料夾
