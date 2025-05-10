@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V7+</title>
+  <title>一騎出發吧｜街景模擬器 V7.1</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
@@ -13,102 +13,54 @@
     }
     #controlPanel {
       position: absolute; top: 60px; left: 10px; z-index: 10;
-      background: rgba(255,255,255,0.95); padding: 12px; width: 360px;
+      background: rgba(255,255,255,0.95); padding: 12px; width: 380px;
       border-left: 5px solid #4CAF50; border-radius: 5px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 14px;
     }
-    select, textarea, input, button {
+    select, textarea, input[type="text"], button {
       width: 100%; margin-top: 6px; padding: 6px;
       font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
     }
     #map { width: 100%; height: 100%; }
     .mode-block { display: none; margin-top: 10px; }
+    #polylineToggle { margin-top: 10px; }
   </style>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
-  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7+</div>
+  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7.1</div>
   <div id="controlPanel">
     <label for="modeSelect">📌 選擇輸入模式</label>
     <select id="modeSelect">
+      <option value="sheet">🔽 路線下拉選單</option>
+      <option value="paste">📝 貼上經緯度</option>
       <option value="ab">📍 A → B 搜尋</option>
     </select>
+
+    <div class="mode-block" id="sheetBlock">
+      <select id="routeSelect"><option>請選擇路線</option></select>
+      <div style="display:flex; gap:10px; margin-top:6px;">
+        <button onclick="selectAll()">全選</button>
+        <button onclick="clearAll()">取消全選</button>
+      </div>
+      <div id="pointList" style="margin-top:10px; max-height:220px; overflow:auto;"></div>
+    </div>
+
+    <div class="mode-block" id="pasteBlock">
+      <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：24.1612666,120.6951848"></textarea>
+      <button onclick="drawFromPasted()">➕ 繪製標記</button>
+    </div>
 
     <div class="mode-block" id="abBlock">
       <input id="pointA" placeholder="起點地名或地址" />
       <input id="pointB" placeholder="終點地名或地址" />
-      <button id="searchBtn" onclick="drawFromAB()">🧭 搜尋路線標記</button>
+      <button onclick="drawFromAB()">🧭 搜尋路線標記</button>
     </div>
+
+    <label id="polylineToggle">
+      <input type="checkbox" id="togglePolyline" checked /> 顯示路線 Polyline
+    </label>
   </div>
   <div id="map"></div>
-  <script>
-    let map, infoWindow, markerA, markerB, routePolyline;
-    function initMap() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 24.15, lng: 120.68 },
-        zoom: 13
-      });
-      infoWindow = new google.maps.InfoWindow();
-
-      const autocompleteA = new google.maps.places.Autocomplete(document.getElementById("pointA"));
-      autocompleteA.addListener("place_changed", () => {
-        const place = autocompleteA.getPlace();
-        if (!place.geometry) return;
-        if (markerA) markerA.setMap(null);
-        markerA = new google.maps.Marker({ map, position: place.geometry.location });
-        infoWindow.setContent("起點：" + place.name);
-        infoWindow.open(map, markerA);
-        map.setCenter(place.geometry.location);
-        toggleSearchBtn();
-      });
-
-      const autocompleteB = new google.maps.places.Autocomplete(document.getElementById("pointB"));
-      autocompleteB.addListener("place_changed", () => {
-        const place = autocompleteB.getPlace();
-        if (!place.geometry) return;
-        if (markerB) markerB.setMap(null);
-        markerB = new google.maps.Marker({ map, position: place.geometry.location });
-        infoWindow.setContent("終點：" + place.name);
-        infoWindow.open(map, markerB);
-        map.setCenter(place.geometry.location);
-        toggleSearchBtn();
-      });
-    }
-
-    function toggleSearchBtn() {
-      const a = document.getElementById("pointA").value.trim();
-      const b = document.getElementById("pointB").value.trim();
-      document.getElementById("searchBtn").disabled = !(a && b);
-    }
-
-    function drawFromAB() {
-      if (routePolyline) routePolyline.setMap(null);
-      const service = new google.maps.DirectionsService();
-      service.route({
-        origin: document.getElementById("pointA").value,
-        destination: document.getElementById("pointB").value,
-        travelMode: "BICYCLING"
-      }, (res, status) => {
-        if (status === "OK") {
-          const path = res.routes[0].overview_path;
-          routePolyline = new google.maps.Polyline({ path, map, strokeColor: "#FF5722", strokeWeight: 4 });
-          map.setCenter(path[0]);
-        } else {
-          alert("搜尋失敗：" + status);
-        }
-      });
-    }
-
-    document.getElementById("modeSelect").addEventListener("change", (e) => {
-      document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
-      document.getElementById(e.target.value + "Block").style.display = "block";
-    });
-
-    window.onload = () => {
-      initMap();
-      toggleSearchBtn();
-      document.getElementById("abBlock").style.display = "block";
-    };
-  </script>
 </body>
 </html>
