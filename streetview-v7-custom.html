@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V6.6-fixed</title>
+  <title>一騎出發吧｜街景模擬器 streetview-v7-custom.html</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
@@ -17,17 +17,19 @@
       border-left: 5px solid #4CAF50; border-radius: 5px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 14px;
     }
-    select, textarea, input, button {
+    select, textarea, input[type=text], button {
       width: 100%; margin-top: 6px; padding: 6px;
       font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
     }
     #map { width: 100%; height: 100%; }
     .mode-block { display: none; margin-top: 10px; }
+    .checkbox-row { display: flex; align-items: center; margin-bottom: 6px; }
+    .checkbox-row input[type="checkbox"] { margin-right: 8px; }
   </style>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
-  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V6.6-fixed</div>
+  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7</div>
   <div id="controlPanel">
     <label for="modeSelect">📌 選擇輸入模式</label>
     <select id="modeSelect">
@@ -78,7 +80,7 @@
         });
         cb._marker = marker;
         marker.addListener("click", () => {
-          infoWindow.setContent(`第${p.order}站 ${p.name}`);
+          infoWindow.setContent(`[#${p.order}] ${p.name}`);
           infoWindow.open(map, marker);
         });
         map.setCenter(marker.getPosition());
@@ -105,8 +107,9 @@
       list.innerHTML = "";
       points.forEach(p => {
         const row = document.createElement("div");
+        row.className = "checkbox-row";
         const id = `pt_${p.order}`;
-        row.innerHTML = `<label><input type="checkbox" id="${id}"> 第${p.order}站 ${p.name}</label>`;
+        row.innerHTML = `<input type="checkbox" id="${id}"><label for="${id}">第${p.order}站 ${p.name}</label>`;
         const cb = row.querySelector("input");
         cb.addEventListener("change", () => toggleMarker(cb, p));
         list.appendChild(row);
@@ -120,8 +123,7 @@
     }
     function drawFromPasted() {
       const raw = document.getElementById("coordTextarea").value.trim();
-      const lines = raw.split("
-");
+      const lines = raw.split("\n");
       const path = lines.map((line, idx) => {
         const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
         return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]), name: `手動點 #${idx + 1}` } : null;
@@ -166,8 +168,8 @@
       document.getElementById(e.target.value + "Block").style.display = "block";
     });
     window.onload = () => {
-      new google.maps.places.Autocomplete(document.getElementById("pointA"));
-      new google.maps.places.Autocomplete(document.getElementById("pointB"));
+      let autocompleteA = new google.maps.places.Autocomplete(document.getElementById("pointA"));
+      let autocompleteB = new google.maps.places.Autocomplete(document.getElementById("pointB"));
       initMap();
       fetchRouteNames();
       document.getElementById("sheetBlock").style.display = "block";
