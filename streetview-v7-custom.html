@@ -108,7 +108,7 @@
       points.forEach(p => {
         const row = document.createElement("div");
         const id = `pt_\${p.order}`;
-        row.innerHTML = `<label><input type="checkbox" id="\${id}">第\${p.order}站 \${p.name}</label>`;
+        row.innerHTML = `<label><input type="checkbox" id="${id}">第${p.order}站 ${p.name}</label>`;
         const cb = row.querySelector("input");
         cb._point = p;
         cb.addEventListener("change", () => toggleMarker(cb, p));
