@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>一騎出發吧｜街景模擬器 V8.4</title>
+  <title>一騎出發吧｜街景模擬器 V8.5</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family: sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -264,10 +264,19 @@
       updateMiniMap();
     }
 
-    // 15. moveAlongPath：依 Polyline 索引逐點前進
+    // 15. moveAlongPath：依 Polyline 索引逐點前進，並更新視角朝向
     function moveAlongPath(step){
+      const oldIndex = stepIndex;
       stepIndex = Math.min(Math.max(0, stepIndex + step), polylinePath.length - 1);
-      panorama.setPosition(polylinePath[stepIndex]);
+      const prev = polylinePath[oldIndex];
+      const curr = polylinePath[stepIndex];
+      // 計算前進方向
+      if(prev && curr){
+        const heading = google.maps.geometry.spherical.computeHeading(prev, curr);
+        panorama.setPov({ heading, pitch: panorama.getPov().pitch });
+      }
+      // 移動至新位置
+      panorama.setPosition(curr);
     }
 
     // 16. updateMiniMap：更新小地圖位置、路線與視角箭頭
