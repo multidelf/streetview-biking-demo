@@ -137,7 +137,7 @@
         const cb=row.querySelector('input'); cb.addEventListener('change', ()=>{
           if(cb.checked){
             const m=new google.maps.Marker({map,position:{lat:p.lat,lng:p.lng}});
-            m.addListener('click',()=>{infoWindow.setContent(p.name);infoWindow.open(map,m});
+            m.addListener('click', ()=>{infoWindow.setContent(p.name);infoWindow.open(map,m});
             markers[p.order-1]=m; map.setCenter(m.getPosition());
           } else if(markers[p.order-1]) markers[p.order-1].setMap(null);
         }); list.appendChild(row);
