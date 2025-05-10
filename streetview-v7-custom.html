@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V7</title>
+  <title>一騎出發吧｜街景模擬器 V6.6-fixed</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
@@ -27,7 +27,7 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
-  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7</div>
+  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V6.6-fixed</div>
   <div id="controlPanel">
     <label for="modeSelect">📌 選擇輸入模式</label>
     <select id="modeSelect">
@@ -78,7 +78,7 @@
         });
         cb._marker = marker;
         marker.addListener("click", () => {
-          infoWindow.setContent(`[#${p.order}] ${p.name}`);
+          infoWindow.setContent(`第${p.order}站 ${p.name}`);
           infoWindow.open(map, marker);
         });
         map.setCenter(marker.getPosition());
@@ -106,7 +106,7 @@
       points.forEach(p => {
         const row = document.createElement("div");
         const id = `pt_${p.order}`;
-        row.innerHTML = `<label><input type="checkbox" id="${id}">第${p.order}站 ${p.name}</label>`;
+        row.innerHTML = `<label><input type="checkbox" id="${id}"> 第${p.order}站 ${p.name}</label>`;
         const cb = row.querySelector("input");
         cb.addEventListener("change", () => toggleMarker(cb, p));
         list.appendChild(row);
@@ -120,7 +120,8 @@
     }
     function drawFromPasted() {
       const raw = document.getElementById("coordTextarea").value.trim();
-      const lines = raw.split("\n");
+      const lines = raw.split("
+");
       const path = lines.map((line, idx) => {
         const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
         return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]), name: `手動點 #${idx + 1}` } : null;
@@ -165,8 +166,8 @@
       document.getElementById(e.target.value + "Block").style.display = "block";
     });
     window.onload = () => {
-      let autocompleteA = new google.maps.places.Autocomplete(document.getElementById("pointA"));
-      let autocompleteB = new google.maps.places.Autocomplete(document.getElementById("pointB"));
+      new google.maps.places.Autocomplete(document.getElementById("pointA"));
+      new google.maps.places.Autocomplete(document.getElementById("pointB"));
       initMap();
       fetchRouteNames();
       document.getElementById("sheetBlock").style.display = "block";
