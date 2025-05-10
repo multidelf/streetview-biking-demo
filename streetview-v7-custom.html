@@ -25,7 +25,7 @@
     .checkbox-row { display: flex; align-items: center; margin-bottom: 4px; }
     .checkbox-row input[type="checkbox"] { margin-right: 8px; }
   </style>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk=places"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
   <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7.1</div>
@@ -156,9 +156,6 @@
         });
         list.appendChild(row);
       });
-      const path = points.map(p => ({ lat: p.lat, lng: p.lng }));
-      drawPolylinePath(path);
-      if (path.length) map.setCenter(path[0]);
     }
 
     function planPolyline() {
