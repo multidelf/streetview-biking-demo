@@ -1,154 +1,190 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <title>一騎出發吧｜街景模擬器 V8</title>
+  <meta charset="UTF-8" />
+  <title>一騎出發吧｜街景模擬器 V6.5</title>
   <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; }
-    #panel {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 999;
-      background: white;
-      padding: 10px;
-      border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      width: 300px;
+    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+    #logoHeader {
+      position: absolute; top: 10px; left: 10px; z-index: 10;
+      background: rgba(255,255,255,0.85); padding: 5px 10px;
+      display: flex; align-items: center; font-weight: bold; border-radius: 6px;
     }
-    #stationList { max-height: 300px; overflow-y: auto; margin-top: 10px; }
-    textarea, select, input { width: 100%; margin-top: 5px; }
+    #logoHeader img { height: 32px; margin-right: 8px; }
+
+    #controlPanel {
+      position: absolute; top: 60px; left: 10px; z-index: 10;
+      background: rgba(255,255,255,0.95); padding: 12px; width: 360px;
+      border-left: 5px solid #4CAF50; border-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 14px;
+    }
+    select, textarea, input, button {
+      width: 100%; margin-top: 6px; padding: 6px;
+      font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    #map { width: 100%; height: 100%; }
+    .mode-block { display: none; margin-top: 10px; }
+    .stationList { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; margin-top: 5px; }
   </style>
-  
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
-<div id="panel">
-  <label>📌 選擇輸入模式</label>
-  <select id="modeSelect">
-    <option value="route">🔽 路線下拉選單</option>
-    <option value="coords">📝 貼上經緯度</option>
-    <option value="ab">📍 A → B 搜尋</option>
-  </select>
-
-  <div id="inputRoute" class="mode">
-    <select id="routeSelect"><option>請選擇路線</option></select>
-    <button onclick="selectAll(true)">全選</button>
-    <button onclick="selectAll(false)">取消全選</button>
-    <div id="stationList"></div>
+  <div id="logoHeader">
+    <img src="assets/img/logo.jpg" alt="Logo">
+    一騎出發吧｜街景模擬器 V6.5
   </div>
 
-  <div id="inputCoords" class="mode" style="display:none">
-    <textarea id="coordsBox" placeholder="24.1,120.6
-24.2,120.7"></textarea>
-    <button onclick="loadCoords()">載入座標</button>
+  <div id="controlPanel">
+    <label for="modeSelect">📌 選擇路線輸入方式</label>
+    <select id="modeSelect">
+      <option value="sheet">🔽 路線下拉選單</option>
+      <option value="paste">📝 貼上經緯度</option>
+      <option value="ab">📍 A → B 地點搜尋</option>
+    </select>
+
+    <div class="mode-block" id="sheetBlock">
+      <select id="routeSelect"><option>載入中...</option></select>
+      <button onclick="selectAll(true)">全選</button>
+      <button onclick="selectAll(false)">取消全選</button>
+      <div class="stationList" id="stationList"></div>
+    </div>
+
+    <div class="mode-block" id="pasteBlock">
+      <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：
+24.1612666,120.6951848
+24.135119,120.683746"></textarea>
+      <button onclick="drawFromPasted()">➕ 繪製標記</button>
+    </div>
+
+    <div class="mode-block" id="abBlock">
+      <input id="pointA" placeholder="起點地名或地址" />
+      <input id="pointB" placeholder="終點地名或地址" />
+      <button onclick="drawFromAB()">🧭 搜尋路線標記</button>
+    </div>
   </div>
 
-  <div id="inputAB" class="mode" style="display:none">
-    <input id="start" placeholder="起點地址或地點" />
-    <input id="end" placeholder="終點地址或地點" />
-    <button onclick="findRoute()">搜尋路線標記</button>
-  </div>
-</div>
-<div id="map"></div>
-<script>
-const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-let map, markers = [];
+  <div id="map"></div>
 
-function initMap() {
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: 24.15, lng: 120.65 },
-    zoom: 13
-  });
+  <script>
+    const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
+    let map, markers = [], infoWindow;
+    const modeSelect = document.getElementById("modeSelect");
 
-  // 模式切換
-  document.getElementById("modeSelect").addEventListener("change", e => {
-    document.querySelectorAll(".mode").forEach(div => div.style.display = "none");
-    document.getElementById("input" + e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1)).style.display = "block";
-  });
-
-  // 載入下拉選單
-  fetch(apiBase).then(res => res.json()).then(data => {
-    const select = document.getElementById("routeSelect");
-    data.routes.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
-    });
-  });
-
-  document.getElementById("routeSelect").addEventListener("change", () => {
-    const name = document.getElementById("routeSelect").value;
-    fetch(apiBase + "?routeName=" + encodeURIComponent(name)).then(res => res.json()).then(data => {
-      clearMarkers();
-      const list = document.getElementById("stationList");
-      list.innerHTML = "";
-      data.points.forEach((pt, i) => {
-        const id = "chk" + i;
-        const row = document.createElement("div");
-        row.innerHTML = `<input type="checkbox" id="${id}" data-lat="${pt.lat}" data-lng="${pt.lng}" data-name="${pt.name}" onchange="toggleMarker(this)">
-                         [#${pt.order}] ${pt.name || '（未命名）'} (${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)})`;
-        list.appendChild(row);
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 24.15, lng: 120.68 },
+        zoom: 13
       });
-    });
-  });
-}
+      infoWindow = new google.maps.InfoWindow();
+    }
 
-function selectAll(val) {
-  document.querySelectorAll("#stationList input[type=checkbox]").forEach(cb => {
-    cb.checked = val;
-    cb.dispatchEvent(new Event("change"));
-  });
-}
+    function changeMode() {
+      document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
+      const selected = modeSelect.value;
+      document.getElementById(selected + 'Block').style.display = 'block';
+    }
 
-function toggleMarker(cb) {
-  const lat = parseFloat(cb.dataset.lat);
-  const lng = parseFloat(cb.dataset.lng);
-  const name = cb.dataset.name;
-  if (cb.checked) {
-    const m = new google.maps.Marker({ position: { lat, lng }, map });
-    const info = new google.maps.InfoWindow({ content: name });
-    m.addListener("click", () => info.open(map, m));
-    cb._marker = m;
-  } else if (cb._marker) {
-    cb._marker.setMap(null);
-  }
-}
+    function clearMarkers() {
+      markers.forEach(m => m.setMap(null));
+      markers = [];
+    }
 
-function clearMarkers() {
-  document.querySelectorAll("#stationList input[type=checkbox]").forEach(cb => {
-    if (cb._marker) cb._marker.setMap(null);
-  });
-}
+    async function fetchRouteNames() {
+      const res = await fetch(apiBase);
+      const data = await res.json();
+      const sel = document.getElementById("routeSelect");
+      sel.innerHTML = `<option value="">請選擇</option>` +
+        data.routes.map(name => `<option value="${name}">${name}</option>`).join("");
+      sel.addEventListener("change", () => fetchRouteByName(sel.value));
+    }
 
-function loadCoords() {
-  clearMarkers();
-  const lines = document.getElementById("coordsBox").value.trim().split("
-");
-  lines.forEach((line, i) => {
-    const [lat, lng] = line.split(",").map(parseFloat);
-    const m = new google.maps.Marker({ position: { lat, lng }, map });
-    const info = new google.maps.InfoWindow({ content: "手動點 #" + (i + 1) });
-    m.addListener("click", () => info.open(map, m));
-  });
-}
+    async function fetchRouteByName(name) {
+      const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
+      const data = await res.json();
+      const container = document.getElementById("stationList");
+      container.innerHTML = "";
+      clearMarkers();
+      data.points.forEach((p, i) => {
+        const id = "pt" + i;
+        const div = document.createElement("div");
+        div.innerHTML = `<label><input type="checkbox" id="${id}" data-lat="${p.lat}" data-lng="${p.lng}" data-name="${p.name}" onchange="toggleMarker(this)">
+        [#${p.order}] ${p.name} (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})</label>`;
+        container.appendChild(div);
+      });
+    }
 
-function findRoute() {
-  const dir = new google.maps.DirectionsService();
-  const renderer = new google.maps.DirectionsRenderer({ map });
-  dir.route({
-    origin: document.getElementById("start").value,
-    destination: document.getElementById("end").value,
-    travelMode: google.maps.TravelMode.BICYCLING
-  }, (res, status) => {
-    if (status === "OK") renderer.setDirections(res);
-    else alert("搜尋失敗：" + status);
-  });
-}
+    function toggleMarker(cb) {
+      const lat = parseFloat(cb.dataset.lat);
+      const lng = parseFloat(cb.dataset.lng);
+      const name = cb.dataset.name;
+      if (cb.checked) {
+        const m = new google.maps.Marker({ position: { lat, lng }, map });
+        const info = new google.maps.InfoWindow({ content: name });
+        m.addListener("click", () => info.open(map, m));
+        cb._marker = m;
+        markers.push(m);
+      } else if (cb._marker) {
+        cb._marker.setMap(null);
+        markers = markers.filter(m => m !== cb._marker);
+      }
+    }
 
-window.onload = () => { initMap(); };
-</script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
+    function selectAll(val) {
+      document.querySelectorAll("#stationList input[type=checkbox]").forEach(cb => {
+        cb.checked = val;
+        cb.dispatchEvent(new Event("change"));
+      });
+    }
+
+    function drawFromPasted() {
+      const raw = document.getElementById("coordTextarea").value.trim();
+      const lines = raw.split("\n");
+      clearMarkers();
+      lines.forEach((line, idx) => {
+        const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
+        if (!match) return;
+        const lat = parseFloat(match[1]), lng = parseFloat(match[2]);
+        const marker = new google.maps.Marker({ position: { lat, lng }, map });
+        marker.addListener("click", () => {
+          infoWindow.setContent("手動點 #" + (idx + 1));
+          infoWindow.open(map, marker);
+        });
+        markers.push(marker);
+      });
+    }
+
+    function drawFromAB() {
+      const service = new google.maps.DirectionsService();
+      service.route({
+        origin: document.getElementById("pointA").value,
+        destination: document.getElementById("pointB").value,
+        travelMode: "BICYCLING"
+      }, (res, status) => {
+        if (status === "OK") {
+          clearMarkers();
+          const path = res.routes[0].overview_path;
+          path.forEach((p, i) => {
+            const marker = new google.maps.Marker({ position: p, map });
+            marker.addListener("click", () => {
+              infoWindow.setContent(`路線點 #${i + 1}`);
+              infoWindow.open(map, marker);
+            });
+            markers.push(marker);
+          });
+          if (path.length) map.setCenter(path[0]);
+        } else {
+          alert("搜尋失敗：" + status);
+        }
+      });
+    }
+
+    modeSelect.addEventListener("change", changeMode);
+    window.onload = () => {
+      initMap();
+      changeMode();
+      fetchRouteNames();
+    };
+  </script>
 </body>
 </html>
