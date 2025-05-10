@@ -5,15 +5,27 @@
   <meta charset="UTF-8" />
   <title>一騎出發吧｜街景騎乘模擬器</title>
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
+    body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
       position: absolute; top: 10px; left: 10px; z-index: 999;
-      background: rgba(255, 255, 255, 0.8); border-radius: 8px;
+      background: rgba(255, 255, 255, 0.85); border-radius: 8px;
       padding: 5px 10px; display: flex; align-items: center;
-      font-family: sans-serif; font-weight: bold;
+      font-weight: bold;
     }
     #logoHeader img {
       height: 32px; margin-right: 8px;
+    }
+    #inputGuide {
+      position: absolute; top: 60px; left: 10px; z-index: 998;
+      background: rgba(255,255,255,0.95); padding: 12px; max-width: 360px;
+      border-left: 5px solid #4CAF50; border-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 14px;
+    }
+    #inputGuide h3 { margin-top: 0; color: #2c3e50; }
+    #app {
+      width: 100%;
+      height: 100%;
+      background-color: #eee;
     }
   </style>
 </head>
@@ -22,8 +34,19 @@
     <img src="assets/img/logo.jpg" alt="Logo">
     一騎出發吧｜街景騎乘模擬器
   </div>
+
+  <div id="inputGuide">
+    <h3>📌 請選擇路線來源方式</h3>
+    <ol>
+      <li><b>下拉選單</b>：選擇預設路線（由 Google Sheet 提供）</li>
+      <li><b>貼上經緯度</b>：自行輸入多組 GPS 點位（依順序導航）</li>
+      <li><b>A → B 搜尋</b>：輸入起點與終點，由 Google Maps 規劃路線</li>
+    </ol>
+    任一方式完成後，即可模擬導航。
+  </div>
+
   <div id="app">
-    <!-- 模擬器功能會放這裡 -->
+    <!-- 主應用區域：未來插入地圖、街景、表單 -->
   </div>
 </body>
 </html>
