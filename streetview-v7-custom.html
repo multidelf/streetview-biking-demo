@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>一騎出發吧｜街景模擬器 V8.4</title>
+  <title>一騎出發吧｜街景模擬器 V8.3</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family: sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -132,26 +133,16 @@
       }
     }
 
-    // 14. handleKey：鍵盤↑↓ 前後沿 Polyline 移動，A/D 旋轉
-    function handleKey(e){
-      if(currentMode!=='street' || !polylinePath.length) return;
-      if(e.key==='ArrowUp' || e.key.toLowerCase()==='w') moveAlongPath(1);
-      if(e.key==='ArrowDown' || e.key.toLowerCase()==='s') moveAlongPath(-1);
+    // 14. handleKey：鍵盤↑↓ 前後移動，A/D 旋轉
+    function handleKey(e){ if(currentMode!=='street'||!polylinePath.length) return;
+      if(e.key==='ArrowUp'||e.key.toLowerCase()==='w') moveAlongPath(+STEP_DISTANCE);
+      if(e.key==='ArrowDown'||e.key.toLowerCase()==='s') moveAlongPath(-STEP_DISTANCE);
       if(e.key.toLowerCase()==='a') panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading-15});
       if(e.key.toLowerCase()==='d') panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading+15});
       updateMiniMap();
     }
 
-    // 15. moveAlongPath：依 Polyline 索引逐點前進
-    let stepIndex = 0;
-    function moveAlongPath(step){
-      stepIndex = Math.min(Math.max(0, stepIndex + step), polylinePath.length - 1);
-      const pos = polylinePath[stepIndex];
-      panorama.setPosition(pos);
-    }
-
-    // 16. updateMiniMap：更新小地圖位置、路線與視角箭頭
- moveAlongPath：沿當前視角移動一定距離
+    // 15. moveAlongPath：沿當前視角移動一定距離
     function moveAlongPath(distance){ const pos=panorama.getPosition().toJSON(), hdg=panorama.getPov().heading; const np=google.maps.geometry.spherical.computeOffset(pos,distance,hdg); panorama.setPosition(np); }
 
     // 16. updateMiniMap：更新小地圖位置、路線與視角箭頭
