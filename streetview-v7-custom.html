@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>一騎出發吧｜街景模擬器 V8.0</title>
+  <title>一騎出發吧｜街景模擬器 V8.1</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family: sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -139,6 +139,6 @@
     // 16. updateMiniMap：更新小地圖位置
     function updateMiniMap(){ const pos=panorama.getPosition(); miniMap.setCenter(pos); miniMarker.setPosition(pos); /* TODO: 視角箭頭 */ }
   </script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places,geometry&callback=initMap"></script>
+  <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>
