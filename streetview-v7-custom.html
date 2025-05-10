@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>一騎出發吧｜街景模擬器 V8.0</title>
+  <title>一騎出發吧｜街景模擬器 V8.1</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family: sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -123,16 +123,23 @@
     // 12. drawFromAB：A→B 模式規劃
     function drawFromAB(){ clearMapObjects(); new google.maps.DirectionsService().route({origin:document.getElementById('pointA').value,destination:document.getElementById('pointB').value,travelMode:'BICYCLING'},(res,status)=>{ if(status==='OK'){ const path=res.routes[0].overview_path; drawPolylinePath(path); document.getElementById('toggleViewBtn').style.display='inline-block'; } else alert('搜尋失敗:'+status); }); }
 
+    // 12. toggleView：切換街景/地圖模式
+    function toggleView() {
+      if (currentMode === 'map') {
+        document.getElementById('map').style.display = 'none';
+        document.getElementById('pano').style.display = 'block';
+        document.getElementById('miniMap').style.display = 'block';
+        panorama.setVisible(true);
+        panorama.setPosition(polylinePath[0] || panorama.getPosition());
+        currentMode = 'street';
+      } else {
+        document.getElementById('pano').style.display = 'none';
+        document.getElementById('miniMap').style.display = 'none';
+        document.getElementById('map').style.display = 'block';
+        panorama.setVisible(false);
+        currentMode = 'map';
+      }
+    }
+
     // 13. handleKey：WASD 控制街景導航
     function handleKey(e){ if(currentMode!=='street'||!polylinePath.length) return; switch(e.key.toLowerCase()){ case 'w': moveAlongPath(+STEP_DISTANCE); break; case 's': moveAlongPath(-STEP_DISTANCE); break; case 'a': panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading-15}); break; case 'd': panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading+15}); break; } updateMiniMap(); }
-
-    // 14. moveAlongPath：沿當前視角移動固定距離
-    function moveAlongPath(distance){ const pos=panorama.getPosition().toJSON(), heading=panorama.getPov().heading; const newPos=google.maps.geometry.spherical.computeOffset(pos,distance,heading); panorama.setPosition(newPos); }
-
-    // 15. updateMiniMap：小地圖同步位置與視角箭頭
-    function updateMiniMap(){ const pos=panorama.getPosition(); miniMap.setCenter(pos); miniMarker.setPosition(pos);
-      // TODO: 在小地圖繪製箭頭指示視角
-    }
-  </script>
-</body>
-</html>
