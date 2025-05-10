@@ -134,23 +134,30 @@
       clearMapObjects();
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const data = await res.json();
-      const list = document.getElementById("pointList"); list.innerHTML = '';
+      const list = document.getElementById("pointList");
+      list.innerHTML = '';
       data.points.forEach((p, i) => {
         const row = document.createElement("div"); row.className = "checkbox-row";
-        row.innerHTML = `<input type="checkbox" data-lat="${p.lat}" data-lng="${p.lng}"><label>第${p.order}站 ${p.name}</label>`;
+        row.innerHTML = `<input type=\"checkbox\" data-lat=\"${p.lat}\" data-lng=\"${p.lng}\"><label>第${p.order}站 ${p.name}</label>`;
         const cb = row.querySelector("input");
         cb.addEventListener("change", () => {
           if (cb.checked) {
             const marker = new google.maps.Marker({ map, position: { lat: p.lat, lng: p.lng } });
             marker.addListener("click", () => { infoWindow.setContent(p.name); infoWindow.open(map, marker); });
             markers[i] = marker;
-          } else { if (markers[i]) markers[i].setMap(null); }
+            map.setCenter(marker.getPosition());
+          } else {
+            if (markers[i]) {
+              markers[i].setMap(null);
+              delete markers[i];
+            }
+          }
         });
         list.appendChild(row);
       });
     }
 
-    // 14. planPolyline：依勾選站點規劃路線，並顯示切換按鈕與街景起點
+    // 14. planPolyline：依勾選站點規劃路線，並顯示切換按鈕與街景起點. planPolyline：依勾選站點規劃路線，並顯示切換按鈕與街景起點
     function planPolyline() {
       clearMapObjects();
       const path = Array.from(document.querySelectorAll("#pointList input[type=checkbox]"))
