@@ -55,7 +55,7 @@
     <div class="mode-block" id="abBlock">
       <input id="pointA" placeholder="起點地名或地址" />
       <input id="pointB" placeholder="終點地名或地址" />
-      <button id="searchBtn" onclick="drawFromAB()">🧭 搜尋路線標記</button>
+      <button id="searchBtn" disabled onclick="drawFromAB()">🧭 搜尋路線標記</button>
     </div>
   </div>
 
@@ -63,7 +63,8 @@
 
   <script>
     const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-    let map, infoWindow, markers = [], polyline, markerA, markerB;
+    let map, infoWindow, markers = [], polyline;
+let markerA = null, markerB = null; // 📌 A/B 標記改為全域變數
 
     // 📌 初始化地圖與資訊視窗，並啟動 A/B 自動完成輸入
     function initMap() {
@@ -211,7 +212,12 @@
       const path = [];
       lines.forEach((line, i) => {
         const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
-        if (match) {
+        
+        if (!match) {
+          console.warn("格式錯誤，已略過該行：", line);
+          return;
+        }
+
           const lat = parseFloat(match[1]), lng = parseFloat(match[2]);
           const marker = new google.maps.Marker({ map, position: { lat, lng } });
           marker.addListener("click", () => {
@@ -223,7 +229,14 @@
         }
       });
       drawPolylinePath(path);
-      if (path.length) map.setCenter(path[0]);
+      if (path.length) 
+          map.setCenter(path[0]);
+          const marker = new google.maps.Marker({ map, position: path[0] });
+          marker.addListener("click", () => {
+            infoWindow.setContent("起點與終點搜尋成功");
+            infoWindow.open(map, marker);
+          });
+
     }
 
     // 📌 根據 A/B 地點輸入使用 Directions API 繪製路線
@@ -238,7 +251,14 @@
         if (status === "OK") {
           const path = res.routes[0].overview_path;
           drawPolylinePath(path);
+          
           map.setCenter(path[0]);
+          const marker = new google.maps.Marker({ map, position: path[0] });
+          marker.addListener("click", () => {
+            infoWindow.setContent("起點與終點搜尋成功");
+            infoWindow.open(map, marker);
+          });
+
         } else {
           alert("搜尋失敗：" + status);
         }
