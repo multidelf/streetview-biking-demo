@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V6</title>
+  <title>一騎出發吧｜街景模擬器 V8</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
@@ -23,41 +23,55 @@
       width: 100%; margin-top: 6px; padding: 6px;
       font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
     }
-    #map { width: 100%; height: 100%; }
-
     .mode-block { display: none; margin-top: 10px; }
+    .stationList { margin-top: 8px; max-height: 180px; overflow-y: auto; }
+    .stationItem { margin-bottom: 4px; }
+    .marker-control { margin-top: 6px; display: flex; gap: 6px; }
+    #map { width: 100%; height: 100%; }
   </style>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
   <div id="logoHeader">
     <img src="assets/img/logo.jpg" alt="Logo">
-    一騎出發吧｜街景模擬器 V6
+    一騎出發吧｜街景模擬器 V8
   </div>
 
   <div id="controlPanel">
-    <label for="modeSelect">📌 選擇路線輸入方式</label>
+    <label for="modeSelect">📌 選擇輸入模式</label>
     <select id="modeSelect">
       <option value="sheet">🔽 路線下拉選單</option>
       <option value="paste">📝 貼上經緯度</option>
-      <option value="ab">📍 A → B 地點搜尋</option>
+      <option value="ab">📍 A → B 搜尋</option>
     </select>
 
     <div class="mode-block" id="sheetBlock">
-      <select id="routeSelect"><option>載入中...</option></select>
+      <select id="routeSelect">
+        <option value="">請選擇</option>
+      </select>
+      <div class="marker-control">
+        <button onclick="selectAll(true)">全選</button>
+        <button onclick="selectAll(false)">取消全選</button>
+      </div>
+      <div class="stationList" id="sheetStations"></div>
     </div>
 
     <div class="mode-block" id="pasteBlock">
       <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：
 24.1612666,120.6951848
 24.135119,120.683746"></textarea>
-      <button onclick="drawFromPasted()">➕ 繪製標記</button>
+      <button onclick="parsePastedCoords()">解析路線</button>
+      <div class="marker-control">
+        <button onclick="selectAll(true, 'paste')">全選</button>
+        <button onclick="selectAll(false, 'paste')">取消全選</button>
+      </div>
+      <div class="stationList" id="pasteStations"></div>
     </div>
 
     <div class="mode-block" id="abBlock">
-      <input id="pointA" placeholder="起點地名或地址" />
-      <input id="pointB" placeholder="終點地名或地址" />
-      <button onclick="drawFromAB()">🧭 搜尋路線標記</button>
+      <input id="pointA" placeholder="起點地址" />
+      <input id="pointB" placeholder="終點地址" />
+      <button onclick="drawFromAB()">🧭 查詢路線</button>
     </div>
   </div>
 
@@ -65,8 +79,7 @@
 
   <script>
     const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-    let map, markers = [], infoWindow;
-    const modeSelect = document.getElementById("modeSelect");
+    let map, infoWindow, markers = [];
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -74,12 +87,8 @@
         zoom: 13
       });
       infoWindow = new google.maps.InfoWindow();
-    }
-
-    function changeMode() {
-      document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
-      const selected = modeSelect.value;
-      document.getElementById(selected + 'Block').style.display = 'block';
+      new google.maps.places.Autocomplete(document.getElementById("pointA"));
+      new google.maps.places.Autocomplete(document.getElementById("pointB"));
     }
 
     function clearMarkers() {
@@ -87,47 +96,84 @@
       markers = [];
     }
 
+    function addMarker(lat, lng, label) {
+      const m = new google.maps.Marker({ position: { lat, lng }, map });
+      m.addListener("click", () => {
+        infoWindow.setContent(label);
+        infoWindow.open(map, m);
+      });
+      markers.push(m);
+    }
+
+    function changeMode() {
+      document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
+      const mode = document.getElementById("modeSelect").value;
+      document.getElementById(mode + "Block").style.display = "block";
+    }
+
     async function fetchRouteNames() {
       const res = await fetch(apiBase);
       const data = await res.json();
       const sel = document.getElementById("routeSelect");
-      sel.innerHTML = data.routes.map(name => `<option value="${name}">${name}</option>`).join("");
-      sel.addEventListener("change", () => fetchRouteByName(sel.value));
+      data.routes.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
     }
 
     async function fetchRouteByName(name) {
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const data = await res.json();
-      const points = data.points;
+      const list = document.getElementById("sheetStations");
+      list.innerHTML = "";
       clearMarkers();
-      points.forEach(p => {
-        const marker = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map });
-        marker.addListener("click", () => {
-          infoWindow.setContent(`[#${p.order}] ${p.name}`);
-          infoWindow.open(map, marker);
-        });
-        markers.push(marker);
+      data.points.forEach((p, i) => {
+        const div = document.createElement("div");
+        div.className = "stationItem";
+        const id = `sheet_${i}`;
+        div.innerHTML = `<label><input type="checkbox" id="${id}" onchange="toggleMarker(this, ${p.lat}, ${p.lng}, '[#${p.order}] ${p.name}')"> [#${p.order}] ${p.name} (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})</label>`;
+        list.appendChild(div);
       });
-      if (points[0]) map.setCenter({ lat: points[0].lat, lng: points[0].lng });
     }
 
-    function drawFromPasted() {
-      const raw = document.getElementById("coordTextarea").value.trim();
-      const lines = raw.split("\n");
-      const path = lines.map((line, idx) => {
-        const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
-        return match ? { lat: parseFloat(match[0]), lng: parseFloat(match[1]), name: `手動點 #${idx + 1}` } : null;
-      }).filter(Boolean);
+    function parsePastedCoords() {
+      const text = document.getElementById("coordTextarea").value.trim();
+      const lines = text.split("\n").filter(Boolean);
+      const list = document.getElementById("pasteStations");
+      list.innerHTML = "";
       clearMarkers();
-      path.forEach((p, i) => {
-        const marker = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map });
-        marker.addListener("click", () => {
-          infoWindow.setContent(p.name);
-          infoWindow.open(map, marker);
-        });
-        markers.push(marker);
+      lines.forEach((line, i) => {
+        const parts = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
+        if (!parts) return;
+        const lat = parseFloat(parts[1]), lng = parseFloat(parts[2]);
+        const label = `手動點 #${i + 1}`;
+        const id = `paste_${i}`;
+        const div = document.createElement("div");
+        div.className = "stationItem";
+        div.innerHTML = `<label><input type="checkbox" id="${id}" onchange="toggleMarker(this, ${lat}, ${lng}, '${label}')"> ${label} (${lat.toFixed(5)}, ${lng.toFixed(5)})</label>`;
+        list.appendChild(div);
       });
-      if (path[0]) map.setCenter({ lat: path[0].lat, lng: path[0].lng });
+    }
+
+    function toggleMarker(checkbox, lat, lng, label) {
+      if (checkbox.checked) {
+        addMarker(lat, lng, label);
+      } else {
+        const found = markers.find(m => m.getPosition().lat() === lat && m.getPosition().lng() === lng);
+        if (found) {
+          found.setMap(null);
+          markers = markers.filter(m => m !== found);
+        }
+      }
+    }
+
+    function selectAll(checked, mode = "sheet") {
+      const container = document.getElementById(mode + "Stations");
+      container.querySelectorAll("input[type=checkbox]").forEach(cb => {
+        cb.checked = checked;
+        cb.dispatchEvent(new Event("change"));
+      });
     }
 
     function drawFromAB() {
@@ -138,28 +184,24 @@
         travelMode: "BICYCLING"
       }, (res, status) => {
         if (status === "OK") {
-          const path = res.routes[0].overview_path;
           clearMarkers();
-          path.forEach((p, i) => {
-            const marker = new google.maps.Marker({ position: p, map });
-            marker.addListener("click", () => {
-              infoWindow.setContent(`路線點 #${i + 1}`);
-              infoWindow.open(map, marker);
-            });
-            markers.push(marker);
-          });
-          map.setCenter(path[0]);
+          const path = res.routes[0].overview_path;
+          path.forEach((pt, i) => addMarker(pt.lat(), pt.lng(), `路線點 #${i + 1}`));
+          if (path.length) map.setCenter(path[0]);
         } else {
-          alert("搜尋失敗：" + status);
+          alert("無法查詢路線：" + status);
         }
       });
     }
 
-    modeSelect.addEventListener("change", changeMode);
     window.onload = () => {
       initMap();
       changeMode();
       fetchRouteNames();
+      document.getElementById("modeSelect").addEventListener("change", changeMode);
+      document.getElementById("routeSelect").addEventListener("change", e => {
+        if (e.target.value) fetchRouteByName(e.target.value);
+      });
     };
   </script>
 </body>
