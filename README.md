@@ -1,2 +1,2 @@
 # streetview-biking-demo
-一齊出發吧
+一騎出發吧
