@@ -147,8 +147,8 @@ function findRoute() {
   });
 }
 
-window.initMap = initMap;
+window.onload = () => { initMap(); };
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&callback=initMap&libraries=places"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </body>
 </html>
