@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V7.4</title>
+  <title>一騎出發吧｜街景模擬器 V7.2</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; }
     #logoHeader {
       position: absolute; top: 10px; left: 10px; z-index: 10;
       background: rgba(255,255,255,0.85); padding: 5px 10px;
@@ -20,7 +20,8 @@
       width: 100%; margin-top: 6px; padding: 6px;
       font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
     }
-    #map { width: 100%; height: 100%; }
+    #map, #pano { width: 100%; height: 100%; }
+    #pano { display: none; }
     .mode-block { display: none; margin-top: 10px; }
     .checkbox-row { display: flex; align-items: center; margin-bottom: 4px; }
     .checkbox-row input[type="checkbox"] { margin-right: 8px; }
@@ -28,9 +29,12 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
-  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7.1</div>
+  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7.2</div>
   <div id="controlPanel">
-    <label for="modeSelect">📌 選擇輸入模式</label>
+    <label for="modeSelect">
+      📌 1. 選擇輸入模式
+      <button id="toggleViewBtn" onclick="toggleView()" style="display:none; margin-left:8px; padding:4px 10px; font-size:13px;">切換街景/地圖</button>
+    </label>
     <select id="modeSelect">
       <option value="sheet">🔽 路線下拉選單</option>
       <option value="paste">📝 貼上經緯度</option>
@@ -40,171 +44,136 @@
     <div class="mode-block" id="sheetBlock">
       <select id="routeSelect"><option>請選擇路線</option></select>
       <div style="display:flex; gap:10px; margin-top:6px;">
-        <button onclick="selectAll()">全選</button>
-        <button onclick="clearAll()">取消全選</button>
+        <button onclick="selectAll()">2. 全選</button>
+        <button onclick="clearAll()">3. 取消全選</button>
       </div>
       <div id="pointList" style="margin-top:10px; max-height:220px; overflow:auto;"></div>
-      <button id="planPolylineBtn" style="margin-top:10px;">✏️ 規劃路線</button>
+      <button id="planPolylineBtn" style="margin-top:10px;">4. 規劃路線</button>
     </div>
 
     <div class="mode-block" id="pasteBlock">
       <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：24.1612666,120.6951848"></textarea>
-      <button onclick="drawFromPasted()">➕ 繪製標記</button>
+      <button onclick="drawFromPasted()">5. 繪製標記</button>
     </div>
 
     <div class="mode-block" id="abBlock">
       <input id="pointA" placeholder="起點地名或地址" />
       <input id="pointB" placeholder="終點地名或地址" />
-      <button id="searchBtn" disabled onclick="drawFromAB()">🧭 搜尋路線標記</button>
+      <button id="searchBtn" onclick="drawFromAB()" disabled>6. 搜尋路線標記</button>
     </div>
   </div>
 
   <div id="map"></div>
+  <div id="pano"></div>
 
   <script>
     const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-    let map, infoWindow, markers = [], polyline;
-let markerA = null, markerB = null; // 📌 A/B 標記改為全域變數
+    let map, infoWindow, markers = [], polyline, markerA, markerB;
+    let panorama, currentMode = 'map', polylinePath = [];
 
-    // 📌 初始化地圖與資訊視窗，並啟動 A/B 自動完成輸入
+    // 7. initMap：初始化地圖、街景與 InfoWindow，並啟動 Autocomplete 及路線清單載入
     function initMap() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 24.15, lng: 120.68 },
-        zoom: 13
-      });
+      map = new google.maps.Map(document.getElementById("map"), { center: { lat: 24.15, lng: 120.68 }, zoom: 13 });
+      panorama = new google.maps.StreetViewPanorama(document.getElementById("pano"), { position: { lat: 24.15, lng: 120.68 }, pov: { heading: 0, pitch: 0 }, visible: false });
+      map.setStreetView(panorama);
       infoWindow = new google.maps.InfoWindow();
       setupAutocomplete();
+      fetchRouteNames();
+      document.getElementById("sheetBlock").style.display = "block";
     }
 
-    // 📌 為起點與終點輸入欄位啟用 Google Place Autocomplete，自動顯示建議並標記
+    // 8. setupAutocomplete：設置 A/B 欄位 Google Place Autocomplete
     function setupAutocomplete() {
-      const inputA = document.getElementById("pointA");
-      const inputB = document.getElementById("pointB");
-      const autoA = new google.maps.places.Autocomplete(inputA);
-      const autoB = new google.maps.places.Autocomplete(inputB);
+      const autoA = new google.maps.places.Autocomplete(document.getElementById("pointA"));
+      const autoB = new google.maps.places.Autocomplete(document.getElementById("pointB"));
       autoA.addListener("place_changed", () => {
-        const place = autoA.getPlace();
-        if (!place.geometry) return;
+        const place = autoA.getPlace(); if (!place.geometry) return;
         if (markerA) markerA.setMap(null);
         markerA = new google.maps.Marker({ map, position: place.geometry.location });
         infoWindow.setContent("起點：" + place.name);
         infoWindow.open(map, markerA);
-        map.setCenter(place.geometry.location);
-        toggleSearchBtn();
+        map.setCenter(place.geometry.location); toggleSearchBtn();
       });
       autoB.addListener("place_changed", () => {
-        const place = autoB.getPlace();
-        if (!place.geometry) return;
+        const place = autoB.getPlace(); if (!place.geometry) return;
         if (markerB) markerB.setMap(null);
         markerB = new google.maps.Marker({ map, position: place.geometry.location });
         infoWindow.setContent("終點：" + place.name);
         infoWindow.open(map, markerB);
-        map.setCenter(place.geometry.location);
-        toggleSearchBtn();
+        map.setCenter(place.geometry.location); toggleSearchBtn();
       });
     }
 
-    // 📌 根據 A/B 欄位是否輸入來啟用或停用搜尋按鈕
+    // 9. toggleSearchBtn：動態啟用 / 停用 A→B 搜尋按鈕
     function toggleSearchBtn() {
       const a = document.getElementById("pointA").value.trim();
       const b = document.getElementById("pointB").value.trim();
       document.getElementById("searchBtn").disabled = !(a && b);
     }
 
-    // 📌 根據給定路徑繪製 Polyline 線段
+    // 10. drawPolylinePath：封裝 Polyline 繪製
     function drawPolylinePath(path) {
       if (polyline) polyline.setMap(null);
-      polyline = new google.maps.Polyline({
-        path, map, strokeColor: "#FF5722", strokeWeight: 4
-      });
+      polyline = new google.maps.Polyline({ path, map, strokeColor: "#FF5722", strokeWeight: 4 });
     }
 
-    // 📌 清除所有地圖上的標記與線段
-    function clearMapObjects() {
-      markers.forEach(m => m.setMap(null));
-      markers = [];
-      if (polyline) polyline.setMap(null);
-    }
+    // 11. clearMapObjects：清除所有 Marker 與 Polyline
+    function clearMapObjects() { markers.forEach(m => m.setMap(null)); markers = []; if (polyline) polyline.setMap(null); }
 
+    // 12. fetchRouteNames：從後端載入路線清單
     async function fetchRouteNames() {
       const res = await fetch(apiBase);
       const data = await res.json();
       const sel = document.getElementById("routeSelect");
-      sel.innerHTML = `<option>請選擇路線</option>` + data.routes.map(name => `<option value="${name}">${name}</option>`).join("");
+      sel.innerHTML = `<option>請選擇路線</option>` + data.routes.map(n => `<option value="${n}">${n}</option>`).join("");
       sel.addEventListener("change", () => fetchRouteByName(sel.value));
     }
 
+    // 13. fetchRouteByName：依路線名稱載入站點列表
     async function fetchRouteByName(name) {
       clearMapObjects();
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const data = await res.json();
-      const points = data.points;
-      const list = document.getElementById("pointList");
-      list.innerHTML = "";
-      points.forEach((p, i) => {
-        const row = document.createElement("div");
-        row.className = "checkbox-row";
-        const id = `pt_${p.order}`;
-        row.innerHTML = `<input type="checkbox" id="${id}" data-lat="${p.lat}" data-lng="${p.lng}"><label for="${id}">第${p.order}站 ${p.name}</label>`;
+      const list = document.getElementById("pointList"); list.innerHTML = '';
+      data.points.forEach((p, i) => {
+        const row = document.createElement("div"); row.className = "checkbox-row";
+        row.innerHTML = `<input type="checkbox" data-lat="${p.lat}" data-lng="${p.lng}"><label>第${p.order}站 ${p.name}</label>`;
         const cb = row.querySelector("input");
         cb.addEventListener("change", () => {
           if (cb.checked) {
             const marker = new google.maps.Marker({ map, position: { lat: p.lat, lng: p.lng } });
-            marker.addListener("click", () => {
-              infoWindow.setContent(`[#${p.order}] ${p.name}`);
-              infoWindow.open(map, marker);
-            });
+            marker.addListener("click", () => { infoWindow.setContent(p.name); infoWindow.open(map, marker); });
             markers[i] = marker;
-            map.setCenter(marker.getPosition());
-          } else {
-            if (markers[i]) markers[i].setMap(null);
-          }
+          } else { if (markers[i]) markers[i].setMap(null); }
         });
         list.appendChild(row);
       });
     }
 
-    // 📌 根據勾選的站點順序使用 Directions API 繪製完整路線
+    // 14. planPolyline：依勾選站點規劃路線，並顯示切換按鈕與街景起點
     function planPolyline() {
-      if (polyline) polyline.setMap(null);
-      const path = [];
-      document.querySelectorAll("#pointList input[type=checkbox]").forEach((cb, i) => {
-        if (cb.checked && markers[i]) {
-          path.push(markers[i].getPosition().toJSON());
+      clearMapObjects();
+      const path = Array.from(document.querySelectorAll("#pointList input[type=checkbox]"))
+        .map((cb,i)=> cb.checked&&markers[i]?markers[i].getPosition().toJSON():null)
+        .filter(p=>p);
+      if (path.length<2) { alert("請至少選擇兩個站點"); return; }
+      new google.maps.DirectionsService().route({ origin:path[0], destination:path[path.length-1], waypoints:path.slice(1,-1).map(p=>({location:p})), travelMode:"BICYCLING" },
+        (res,status)=>{
+          if (status==="OK") {
+            polylinePath = res.routes[0].overview_path;
+            drawPolylinePath(polylinePath);
+            map.setCenter(polylinePath[0]);
+            panorama.setPosition(polylinePath[0]);
+            document.getElementById("toggleViewBtn").style.display = "inline-block";
+          } else {
+            alert("路線繪製失敗："+status);
+          }
         }
-      });
-      if (path.length < 2) {
-        alert("請至少選擇兩個站點進行路線規劃！");
-        return;
-      }
-      const service = new google.maps.DirectionsService();
-      service.route({
-        origin: path[0],
-        destination: path[path.length - 1],
-        waypoints: path.slice(1, -1).map(p => ({ location: p })),
-        travelMode: "BICYCLING"
-      }, (res, status) => {
-        if (status === "OK") {
-          drawPolylinePath(res.routes[0].overview_path);
-          map.setCenter(res.routes[0].overview_path[0]);
-        } else {
-          alert("路線繪製失敗：" + status);
-        }
-      });
+      );
     }
-
     document.getElementById("planPolylineBtn").addEventListener("click", planPolyline);
 
-    // 📌 勾選所有站點選項並顯示標記
-    function selectAll() {
-      document.querySelectorAll("#pointList input[type=checkbox]").forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event("change")); });
-    }
-    // 📌 取消勾選所有站點並清除標記
-    function clearAll() {
-      document.querySelectorAll("#pointList input[type=checkbox]").forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event("change")); });
-    }
-
-    // 📌 解析使用者貼上的經緯度資料並繪製標記與 Polyline
+    // 15. drawFromPasted：解析使用者貼上經緯度並繪製
     function drawFromPasted() {
       clearMapObjects();
       const raw = document.getElementById("coordTextarea").value.trim();
@@ -212,69 +181,46 @@ let markerA = null, markerB = null; // 📌 A/B 標記改為全域變數
       const path = [];
       lines.forEach((line, i) => {
         const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
-        
-        if (!match) {
-          console.warn("格式錯誤，已略過該行：", line);
-          return;
-        }
-
+        if (match) {
           const lat = parseFloat(match[1]), lng = parseFloat(match[2]);
-          const marker = new google.maps.Marker({ map, position: { lat, lng } });
-          marker.addListener("click", () => {
-            infoWindow.setContent(`手動點 #${i + 1}`);
-            infoWindow.open(map, marker);
+          const mk = new google.maps.Marker({ map, position: { lat, lng } });
+          mk.addListener("click", () => {
+            infoWindow.setContent(`手動點 #${i+1}`);
+            infoWindow.open(map, mk);
           });
-          markers.push(marker);
+          markers.push(mk);
           path.push({ lat, lng });
         }
       });
       drawPolylinePath(path);
-      if (path.length) 
-          map.setCenter(path[0]);
-          const marker = new google.maps.Marker({ map, position: path[0] });
-          marker.addListener("click", () => {
-            infoWindow.setContent("起點與終點搜尋成功");
-            infoWindow.open(map, marker);
-          });
-
+      if (path.length) map.setCenter(path[0]);
     }
 
-    // 📌 根據 A/B 地點輸入使用 Directions API 繪製路線
+    // 16. drawFromAB：依 A/B 地名查詢並繪製路線
     function drawFromAB() {
       clearMapObjects();
       const service = new google.maps.DirectionsService();
-      service.route({
-        origin: document.getElementById("pointA").value,
-        destination: document.getElementById("pointB").value,
-        travelMode: "BICYCLING"
-      }, (res, status) => {
-        if (status === "OK") {
-          const path = res.routes[0].overview_path;
-          drawPolylinePath(path);
-          
-          map.setCenter(path[0]);
-          const marker = new google.maps.Marker({ map, position: path[0] });
-          marker.addListener("click", () => {
-            infoWindow.setContent("起點與終點搜尋成功");
-            infoWindow.open(map, marker);
-          });
-
-        } else {
-          alert("搜尋失敗：" + status);
+      service.route({ origin: document.getElementById("pointA").value, destination: document.getElementById("pointB").value, travelMode: "BICYCLING" },
+        (res, status) => {
+          if (status === "OK") {
+            const path = res.routes[0].overview_path;
+            drawPolylinePath(path);
+            map.setCenter(path[0]);
+          } else {
+            alert("搜尋失敗：" + status);
+          }
         }
-      });
+      );
     }
 
+    // 17. 切換模式顯示 input blocks
     document.getElementById("modeSelect").addEventListener("change", (e) => {
       document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
       document.getElementById(e.target.value + "Block").style.display = "block";
     });
 
-    window.onload = () => {
-      initMap();
-      fetchRouteNames();
-      document.getElementById("sheetBlock").style.display = "block";
-    };
+    // 18. onload 初始化
+    window.onload = initMap;
   </script>
 </body>
 </html>
