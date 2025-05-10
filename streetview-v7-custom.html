@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V7.2</title>
+  <title>一騎出發吧｜街景模擬器 V7.2.3</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; }
     #logoHeader { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.85); padding: 5px 10px; display: flex; align-items: center; font-weight: bold; border-radius: 6px; }
@@ -172,7 +172,7 @@
 
     // planPolyline：依勾選站點規劃路線、顯示切換按鈕及初始化街景
     function planPolyline() {
-      clearMapObjects();
+      // draw existing markers without clearing them
       const path = Array.from(document.querySelectorAll("#pointList input[type=checkbox]")).map((cb, i) => cb.checked && markers[i] ? markers[i].getPosition().toJSON() : null).filter(p => p);
       if (path.length < 2) { alert("請至少選擇兩個站點"); return; }
       new google.maps.DirectionsService().route({ origin: path[0], destination: path[path.length - 1], waypoints: path.slice(1, -1).map(p => ({ location: p })), travelMode: "BICYCLING" }, (res, status) => {
