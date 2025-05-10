@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V7.1</title>
+  <title>一騎出發吧｜街景模擬器 V7.2</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
@@ -20,15 +21,22 @@
       width: 100%; margin-top: 6px; padding: 6px;
       font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
     }
-    #map { width: 100%; height: 100%; }
+    #map, #pano { width: 100%; height: 100%; display: none; }
     .mode-block { display: none; margin-top: 10px; }
     .checkbox-row { display: flex; align-items: center; margin-bottom: 4px; }
     .checkbox-row input[type="checkbox"] { margin-right: 8px; }
+    #toggleViewBtn {
+      position: absolute; top: 110px; left: 10px; z-index: 11;
+      background: #4CAF50; color: white; padding: 8px 12px;
+      border: none; border-radius: 4px; font-size: 14px;
+      display: none; cursor: pointer;
+    }
   </style>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
-  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7.1</div>
+  <div id="logoHeader">🚴 一騎出發吧｜街景模擬器 V7.2</div>
+  <button id="toggleViewBtn" onclick="toggleView()">切換街景 / 地圖模式</button>
   <div id="controlPanel">
     <label for="modeSelect">📌 選擇輸入模式</label>
     <select id="modeSelect">
@@ -60,64 +68,41 @@
   </div>
 
   <div id="map"></div>
+  <div id="pano"></div>
 
   <script>
     const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-    let map, infoWindow, markers = [], polyline, markerA, markerB;
+    let map, panorama, polyline;
+    let infoWindow, markers = [];
+    let currentMode = 'map';
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 24.15, lng: 120.68 },
         zoom: 13
       });
+      panorama = new google.maps.StreetViewPanorama(document.getElementById("pano"), {
+        position: { lat: 24.15, lng: 120.68 },
+        pov: { heading: 0, pitch: 0 },
+        visible: false
+      });
+      map.setStreetView(panorama);
       infoWindow = new google.maps.InfoWindow();
-      setupAutocomplete();
+      document.getElementById("map").style.display = "block";
     }
 
-    function setupAutocomplete() {
-      const inputA = document.getElementById("pointA");
-      const inputB = document.getElementById("pointB");
-      const autoA = new google.maps.places.Autocomplete(inputA);
-      const autoB = new google.maps.places.Autocomplete(inputB);
-      autoA.addListener("place_changed", () => {
-        const place = autoA.getPlace();
-        if (!place.geometry) return;
-        if (markerA) markerA.setMap(null);
-        markerA = new google.maps.Marker({ map, position: place.geometry.location });
-        infoWindow.setContent("起點：" + place.name);
-        infoWindow.open(map, markerA);
-        map.setCenter(place.geometry.location);
-        toggleSearchBtn();
-      });
-      autoB.addListener("place_changed", () => {
-        const place = autoB.getPlace();
-        if (!place.geometry) return;
-        if (markerB) markerB.setMap(null);
-        markerB = new google.maps.Marker({ map, position: place.geometry.location });
-        infoWindow.setContent("終點：" + place.name);
-        infoWindow.open(map, markerB);
-        map.setCenter(place.geometry.location);
-        toggleSearchBtn();
-      });
-    }
-
-    function toggleSearchBtn() {
-      const a = document.getElementById("pointA").value.trim();
-      const b = document.getElementById("pointB").value.trim();
-      document.getElementById("searchBtn").disabled = !(a && b);
-    }
-
-    function drawPolylinePath(path) {
-      if (polyline) polyline.setMap(null);
-      polyline = new google.maps.Polyline({
-        path, map, strokeColor: "#FF5722", strokeWeight: 4
-      });
-    }
-
-    function clearMapObjects() {
-      markers.forEach(m => m.setMap(null));
-      markers = [];
-      if (polyline) polyline.setMap(null);
+    function toggleView() {
+      if (currentMode === 'map') {
+        document.getElementById("map").style.display = "none";
+        document.getElementById("pano").style.display = "block";
+        panorama.setVisible(true);
+        currentMode = 'street';
+      } else {
+        document.getElementById("pano").style.display = "none";
+        document.getElementById("map").style.display = "block";
+        panorama.setVisible(false);
+        currentMode = 'map';
+      }
     }
 
     async function fetchRouteNames() {
@@ -158,6 +143,19 @@
       });
     }
 
+    function clearMapObjects() {
+      markers.forEach(m => m.setMap(null));
+      markers = [];
+      if (polyline) polyline.setMap(null);
+    }
+
+    function drawPolylinePath(path) {
+      if (polyline) polyline.setMap(null);
+      polyline = new google.maps.Polyline({
+        path, map, strokeColor: "#FF5722", strokeWeight: 4
+      });
+    }
+
     function planPolyline() {
       if (polyline) polyline.setMap(null);
       const path = [];
@@ -178,8 +176,11 @@
         travelMode: "BICYCLING"
       }, (res, status) => {
         if (status === "OK") {
-          drawPolylinePath(res.routes[0].overview_path);
-          map.setCenter(res.routes[0].overview_path[0]);
+          const fullPath = res.routes[0].overview_path;
+          drawPolylinePath(fullPath);
+          map.setCenter(fullPath[0]);
+          // 顯示切換街景按鈕
+          document.getElementById("toggleViewBtn").style.display = "inline-block";
         } else {
           alert("路線繪製失敗：" + status);
         }
@@ -193,46 +194,6 @@
     }
     function clearAll() {
       document.querySelectorAll("#pointList input[type=checkbox]").forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event("change")); });
-    }
-
-    function drawFromPasted() {
-      clearMapObjects();
-      const raw = document.getElementById("coordTextarea").value.trim();
-      const lines = raw.split("\n");
-      const path = [];
-      lines.forEach((line, i) => {
-        const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
-        if (match) {
-          const lat = parseFloat(match[1]), lng = parseFloat(match[2]);
-          const marker = new google.maps.Marker({ map, position: { lat, lng } });
-          marker.addListener("click", () => {
-            infoWindow.setContent(`手動點 #${i + 1}`);
-            infoWindow.open(map, marker);
-          });
-          markers.push(marker);
-          path.push({ lat, lng });
-        }
-      });
-      drawPolylinePath(path);
-      if (path.length) map.setCenter(path[0]);
-    }
-
-    function drawFromAB() {
-      clearMapObjects();
-      const service = new google.maps.DirectionsService();
-      service.route({
-        origin: document.getElementById("pointA").value,
-        destination: document.getElementById("pointB").value,
-        travelMode: "BICYCLING"
-      }, (res, status) => {
-        if (status === "OK") {
-          const path = res.routes[0].overview_path;
-          drawPolylinePath(path);
-          map.setCenter(path[0]);
-        } else {
-          alert("搜尋失敗：" + status);
-        }
-      });
     }
 
     document.getElementById("modeSelect").addEventListener("change", (e) => {
