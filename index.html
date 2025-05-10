@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬器 V5</title>
+  <title>一騎出發吧｜街景模擬器 V6</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
@@ -25,7 +25,6 @@
     }
     #map { width: 100%; height: 100%; }
 
-    .mode { margin-top: 10px; }
     .mode-block { display: none; margin-top: 10px; }
   </style>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
@@ -33,7 +32,7 @@
 <body>
   <div id="logoHeader">
     <img src="assets/img/logo.jpg" alt="Logo">
-    一騎出發吧｜街景模擬器 V5
+    一騎出發吧｜街景模擬器 V6
   </div>
 
   <div id="controlPanel">
@@ -50,15 +49,15 @@
 
     <div class="mode-block" id="pasteBlock">
       <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：
-24.1,120.6
-24.2,120.7"></textarea>
-      <button onclick="drawFromPasted()">➕ 繪製路線</button>
+24.1612666,120.6951848
+24.135119,120.683746"></textarea>
+      <button onclick="drawFromPasted()">➕ 繪製標記</button>
     </div>
 
     <div class="mode-block" id="abBlock">
       <input id="pointA" placeholder="起點地名或地址" />
       <input id="pointB" placeholder="終點地名或地址" />
-      <button onclick="drawFromAB()">🧭 搜尋路線</button>
+      <button onclick="drawFromAB()">🧭 搜尋路線標記</button>
     </div>
   </div>
 
@@ -66,7 +65,7 @@
 
   <script>
     const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-    let map, polyline, marker;
+    let map, markers = [], infoWindow;
     const modeSelect = document.getElementById("modeSelect");
 
     function initMap() {
@@ -74,12 +73,18 @@
         center: { lat: 24.15, lng: 120.68 },
         zoom: 13
       });
+      infoWindow = new google.maps.InfoWindow();
     }
 
     function changeMode() {
       document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
       const selected = modeSelect.value;
       document.getElementById(selected + 'Block').style.display = 'block';
+    }
+
+    function clearMarkers() {
+      markers.forEach(m => m.setMap(null));
+      markers = [];
     }
 
     async function fetchRouteNames() {
@@ -93,18 +98,36 @@
     async function fetchRouteByName(name) {
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const data = await res.json();
-      const path = data.points.map(p => ({ lat: p.lat, lng: p.lng }));
-      drawPath(path);
+      const points = data.points;
+      clearMarkers();
+      points.forEach(p => {
+        const marker = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map });
+        marker.addListener("click", () => {
+          infoWindow.setContent(`[#${p.order}] ${p.name}`);
+          infoWindow.open(map, marker);
+        });
+        markers.push(marker);
+      });
+      if (points[0]) map.setCenter({ lat: points[0].lat, lng: points[0].lng });
     }
 
     function drawFromPasted() {
       const raw = document.getElementById("coordTextarea").value.trim();
-      const lines = raw.split('\n').concat(raw.split('\r')).filter(l => l.includes("120") || l.includes(","));
-      const path = lines.map(line => {
+      const lines = raw.split("\n");
+      const path = lines.map((line, idx) => {
         const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
-        return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]) } : null;
+        return match ? { lat: parseFloat(match[0]), lng: parseFloat(match[1]), name: `手動點 #${idx + 1}` } : null;
       }).filter(Boolean);
-      drawPath(path);
+      clearMarkers();
+      path.forEach((p, i) => {
+        const marker = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map });
+        marker.addListener("click", () => {
+          infoWindow.setContent(p.name);
+          infoWindow.open(map, marker);
+        });
+        markers.push(marker);
+      });
+      if (path[0]) map.setCenter({ lat: path[0].lat, lng: path[0].lng });
     }
 
     function drawFromAB() {
@@ -115,25 +138,24 @@
         travelMode: "BICYCLING"
       }, (res, status) => {
         if (status === "OK") {
-          const path = res.routes[0].overview_path.map(p => ({ lat: p.lat(), lng: p.lng() }));
-          drawPath(path);
+          const path = res.routes[0].overview_path;
+          clearMarkers();
+          path.forEach((p, i) => {
+            const marker = new google.maps.Marker({ position: p, map });
+            marker.addListener("click", () => {
+              infoWindow.setContent(`路線點 #${i + 1}`);
+              infoWindow.open(map, marker);
+            });
+            markers.push(marker);
+          });
+          map.setCenter(path[0]);
         } else {
-          alert("路線規劃失敗：" + status);
+          alert("搜尋失敗：" + status);
         }
       });
     }
 
-    function drawPath(path) {
-      if (polyline) polyline.setMap(null);
-      polyline = new google.maps.Polyline({
-        path, map,
-        strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 4
-      });
-      if (path[0]) map.setCenter(path[0]);
-    }
-
     modeSelect.addEventListener("change", changeMode);
-
     window.onload = () => {
       initMap();
       changeMode();
