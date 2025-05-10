@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>一騎出發吧｜街景模擬器 V8.1</title>
+  <title>一騎出發吧｜街景模擬器 V8.2</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family: sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -108,8 +108,25 @@
     // 11. drawFromPasted：貼上模式規劃路線
     async function drawFromPasted(){ clearMapObjects(); const raw=document.getElementById('coordTextarea').value.trim(), lines=raw.split('\n').filter(l=>l.trim()), coords=lines.map(l=>{ const m=l.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/); return m?{lat:+m[1],lng:+m[2]}:null; }).filter(c=>c); if(coords.length<2){alert('請至少提供兩個座標');return;} coords.forEach((c,i)=>{ const m=new google.maps.Marker({map,position:c}); m.addListener('click',()=>{infoWindow.setContent('手動點#'+(i+1));infoWindow.open(map,m);}); markers.push(m); }); new google.maps.DirectionsService().route({origin:coords[0],destination:coords.at(-1),waypoints:coords.slice(1,-1).map(c=>({location:c})),travelMode:'BICYCLING'},(res,status)=>{ if(status==='OK'){ polylinePath=res.routes[0].overview_path; drawPolylinePath(polylinePath); document.getElementById('toggleViewBtn').style.display='inline-block'; } else alert('路線規劃失敗:'+status); }); }
 
-    // 12. drawFromAB：A→B
-    function drawFromAB(){ clearMapObjects(); new google.maps.DirectionsService().route({origin:document.getElementById('pointA').value,destination:document.getElementById('pointB').value,travelMode:'BICYCLING'},(res,status)=>{ if(status==='OK'){ const path=res.routes[0].overview_path; drawPolylinePath(path); document.getElementById('toggleViewBtn').style.display='inline-block'; } else alert('搜尋失敗:'+status); }); }
+        // 12. drawFromAB：A→B 模式規劃並啟用街景切換
+    function drawFromAB(){
+      clearMapObjects();
+      new google.maps.DirectionsService().route({
+        origin:document.getElementById('pointA').value,
+        destination:document.getElementById('pointB').value,
+        travelMode:'BICYCLING'
+      },(res,status)=>{
+        if(status==='OK'){
+          const path = res.routes[0].overview_path;
+          polylinePath = path;  // 設定為街景路徑
+          drawPolylinePath(path);
+          map.setCenter(path[0]);
+          document.getElementById('toggleViewBtn').style.display='inline-block';
+        } else {
+          alert('搜尋失敗:'+status);
+        }
+      });
+    }
 
     // 13. toggleView：切換街景/地圖
     function toggleView() {
