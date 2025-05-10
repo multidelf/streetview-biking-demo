@@ -3,95 +3,140 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景騎乘模擬器</title>
+  <title>一騎出發吧｜街景模擬器 V5</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #logoHeader {
-      position: absolute; top: 10px; left: 10px; z-index: 999;
-      background: rgba(255,255,255,0.85); border-radius: 8px;
-      padding: 5px 10px; display: flex; align-items: center; font-weight: bold;
+      position: absolute; top: 10px; left: 10px; z-index: 10;
+      background: rgba(255,255,255,0.85); padding: 5px 10px;
+      display: flex; align-items: center; font-weight: bold; border-radius: 6px;
     }
     #logoHeader img { height: 32px; margin-right: 8px; }
-    #routePanel {
-      position: absolute; top: 60px; left: 10px; z-index: 998;
+
+    #controlPanel {
+      position: absolute; top: 60px; left: 10px; z-index: 10;
       background: rgba(255,255,255,0.95); padding: 12px; width: 360px;
       border-left: 5px solid #4CAF50; border-radius: 5px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 14px;
     }
-    select, button {
-      font-size: 14px; margin-top: 6px; padding: 6px;
-      border-radius: 4px; border: 1px solid #ccc; width: 100%;
+    select, textarea, input, button {
+      width: 100%; margin-top: 6px; padding: 6px;
+      font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
     }
-    #stationList { margin-top: 10px; max-height: 160px; overflow-y: auto; border-top: 1px solid #ddd; padding-top: 6px; }
-    .stationItem { cursor: pointer; padding: 4px; margin-bottom: 2px; border-radius: 3px; }
-    .stationItem:hover { background: #eef; }
-    #map { width: 100%; height: 240px; margin-top: 10px; border-radius: 4px; }
+    #map { width: 100%; height: 100%; }
+
+    .mode { margin-top: 10px; }
+    .mode-block { display: none; margin-top: 10px; }
   </style>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places"></script>
 </head>
 <body>
   <div id="logoHeader">
     <img src="assets/img/logo.jpg" alt="Logo">
-    一騎出發吧｜街景騎乘模擬器
+    一騎出發吧｜街景模擬器 V5
   </div>
 
-  <div id="routePanel">
-    <label for="routeSelect">🔽 選擇路線</label>
-    <select id="routeSelect"><option>載入中...</option></select>
-    <div id="stationList"></div>
-    <div id="map"></div>
+  <div id="controlPanel">
+    <label for="modeSelect">📌 選擇路線輸入方式</label>
+    <select id="modeSelect">
+      <option value="sheet">🔽 路線下拉選單</option>
+      <option value="paste">📝 貼上經緯度</option>
+      <option value="ab">📍 A → B 地點搜尋</option>
+    </select>
+
+    <div class="mode-block" id="sheetBlock">
+      <select id="routeSelect"><option>載入中...</option></select>
+    </div>
+
+    <div class="mode-block" id="pasteBlock">
+      <textarea id="coordTextarea" rows="4" placeholder="貼上經緯度，如：
+24.1,120.6
+24.2,120.7"></textarea>
+      <button onclick="drawFromPasted()">➕ 繪製路線</button>
+    </div>
+
+    <div class="mode-block" id="abBlock">
+      <input id="pointA" placeholder="起點地名或地址" />
+      <input id="pointB" placeholder="終點地名或地址" />
+      <button onclick="drawFromAB()">🧭 搜尋路線</button>
+    </div>
   </div>
+
+  <div id="map"></div>
 
   <script>
     const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
-    const routeSelect = document.getElementById("routeSelect");
-    const stationList = document.getElementById("stationList");
-    let map, marker;
+    let map, polyline, marker;
+    const modeSelect = document.getElementById("modeSelect");
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 14,
-        center: { lat: 24.15, lng: 120.68 }
+        center: { lat: 24.15, lng: 120.68 },
+        zoom: 13
       });
+    }
+
+    function changeMode() {
+      document.querySelectorAll('.mode-block').forEach(el => el.style.display = 'none');
+      const selected = modeSelect.value;
+      document.getElementById(selected + 'Block').style.display = 'block';
     }
 
     async function fetchRouteNames() {
       const res = await fetch(apiBase);
       const data = await res.json();
-      routeSelect.innerHTML = data.routes.map(name => `<option value="${name}">${name}</option>`).join("");
+      const sel = document.getElementById("routeSelect");
+      sel.innerHTML = data.routes.map(name => `<option value="${name}">${name}</option>`).join("");
+      sel.addEventListener("change", () => fetchRouteByName(sel.value));
     }
 
     async function fetchRouteByName(name) {
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const data = await res.json();
-      renderStations(data.points);
+      const path = data.points.map(p => ({ lat: p.lat, lng: p.lng }));
+      drawPath(path);
     }
 
-    function renderStations(points) {
-      stationList.innerHTML = points.map(pt => `
-        <div class="stationItem" onclick="moveTo(${pt.lat}, ${pt.lng})">
-          🟢 [${pt.order}] ${pt.name}｜${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}
-        </div>
-      `).join("");
-      if (points[0]) moveTo(points[0].lat, points[0].lng);
+    function drawFromPasted() {
+      const raw = document.getElementById("coordTextarea").value.trim();
+      const lines = raw.split('\n').concat(raw.split('\r')).filter(l => l.includes("120") || l.includes(","));
+      const path = lines.map(line => {
+        const match = line.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
+        return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]) } : null;
+      }).filter(Boolean);
+      drawPath(path);
     }
 
-    function moveTo(lat, lng) {
-      const pos = { lat, lng };
-      map.setCenter(pos);
-      if (!marker) {
-        marker = new google.maps.Marker({ position: pos, map });
-      } else {
-        marker.setPosition(pos);
-      }
+    function drawFromAB() {
+      const service = new google.maps.DirectionsService();
+      service.route({
+        origin: document.getElementById("pointA").value,
+        destination: document.getElementById("pointB").value,
+        travelMode: "BICYCLING"
+      }, (res, status) => {
+        if (status === "OK") {
+          const path = res.routes[0].overview_path.map(p => ({ lat: p.lat(), lng: p.lng() }));
+          drawPath(path);
+        } else {
+          alert("路線規劃失敗：" + status);
+        }
+      });
     }
 
-    routeSelect.addEventListener("change", () => {
-      fetchRouteByName(routeSelect.value);
-    });
+    function drawPath(path) {
+      if (polyline) polyline.setMap(null);
+      polyline = new google.maps.Polyline({
+        path, map,
+        strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 4
+      });
+      if (path[0]) map.setCenter(path[0]);
+    }
+
+    modeSelect.addEventListener("change", changeMode);
 
     window.onload = () => {
       initMap();
+      changeMode();
       fetchRouteNames();
     };
   </script>
