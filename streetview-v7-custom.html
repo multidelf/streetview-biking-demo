@@ -370,8 +370,8 @@
     function togglePanel() {
       const panel = document.getElementById('controlPanel');
       const btn = document.getElementById('togglePanelBtn');
-      panel.classList.toggle('collapsed');
-      btn.textContent = isCollapsed ? '展開' : '向左收起';
+      const collapsed = panel.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '展開面板' : '向左收起';
     }
   </script>
   </script>
