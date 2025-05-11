@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>一騎出發吧｜街景模擬</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -15,7 +16,7 @@
     .checkbox-row input[type=checkbox] { margin-right:8px; }
     #controlPanel.collapsed { transform: translateX(-95%); }
     #miniMap { position:absolute; bottom:10px; right:10px; width:clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; border:2px solid #888; z-index:12; }
-    #elevationChartContainerstyle { width: clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; position: absolute; bottom: 220px; right: 10px; z-index: 12; background: white; border: 2px solid #888; padding: 6px; }
+    #elevationChartContainer { width: clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; position: absolute; bottom: 220px; right: 10px; z-index: 12; background: white; border: 2px solid #888; padding: 6px; }
     #togglePanelBtn { position: absolute; top: 0; right: -10px; height: 100%; width: clamp(20px, 5vw, 30px); background: #4CAF50; color: white;  border: none;  border-radius: 0 5px 5px 0;  padding: 0 6px;  cursor: pointer;  writing-mode: vertical-rl;  text-orientation: mixed;  z-index: 11; }
   </style>
 </head>
@@ -81,7 +82,7 @@
   <div id="map"></div>
   <div id="pano"></div>
   <div id="miniMap"></div>
-  <div id="elevationChartContainer" 
+  <div id="elevationChartContainer">
   <canvas id="elevationChart" width="400" height="150"></canvas></div>
 
   <!-- Google Maps API -->
@@ -298,6 +299,78 @@
     const btn = document.getElementById('togglePanelBtn');
     const isCollapsed = panel.classList.toggle('collapsed');
     btn.textContent = isCollapsed ? '⮞ 展開' : '⮜ 收起'; }
+
+// 取得了 polylinePath（resample 過的 path）進行坡度繪製
+
+function fetchElevationAndDrawChart(polylinePath) {
+  if (!polylinePath || polylinePath.length < 2) {
+    console.warn('無效的路線資料');
+    return;
+  }
+
+  const elevator = new google.maps.ElevationService();
+
+  elevator.getElevationAlongPath({
+    path: polylinePath,
+    samples: 256 // 根據路線長度決定解析度
+  }).then(response => {
+    const elevations = response.results;
+
+    // 取得高程與距離
+    const elevationData = elevations.map(e => e.elevation);
+    const distanceData = elevations.map((_, i) => (i * getPathLength(polylinePath) / 256).toFixed(0));
+
+    drawElevationChart(distanceData, elevationData);
+  }).catch(err => {
+    console.error('高程查詢失敗:', err);
+  });
+}
+
+// 用來計算路線總長度
+function getPathLength(path) {
+  let total = 0;
+  for (let i = 1; i < path.length; i++) {
+    total += google.maps.geometry.spherical.computeDistanceBetween(path[i - 1], path[i]);
+  }
+  return total;
+}
+
+// 用 Chart.js 繪製圖表
+function drawElevationChart(labels, data) {
+  const ctx = document.getElementById('elevationChart').getContext('2d');
+
+  // 如果已存在就先清除
+  if (window.elevationChart) window.elevationChart.destroy();
+
+  window.elevationChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '高度 (公尺)',
+        data,
+        borderColor: '#FF5722',
+        backgroundColor: 'rgba(255,87,34,0.2)',
+        fill: true,
+        pointRadius: 0,
+        borderWidth: 2,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: '距離 (公尺)' } },
+        y: { title: { display: true, text: '高度 (公尺)' } }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+    
   </script>
 </body>
 </html>
