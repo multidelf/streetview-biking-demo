@@ -9,7 +9,7 @@
     #map { display:block; }
     #pano, #miniMap { display:none; }
     #controlPanel {
-      position: absolute;
+      position: relative; /* 關鍵：讓內部 togglePanelBtn 相對定位 */
       top: 60px;
       left: 10px;
       z-index: 10;
@@ -23,31 +23,30 @@
       border-radius: 5px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       transition: transform 0.3s ease;
-      transform: translateX(0);
+      transform: translateX(0); /* 預設展開 */
     }
 
-    #controlPanel.collapsed + #togglePanelBtn {
-  left: 0px; /* 貼齊螢幕邊 */
-}
+    /* ✅ 收折狀態 */
+    #controlPanel.collapsed {
+      transform: translateX(-95%);
+    }
 
-  #togglePanelBtn {
-  position: absolute;
-  top: 50%; /* 垂直置中 */
-  left: calc(clamp(200px, 25vw, 380px) + 20px); /* 貼齊面板右邊 */
-  transform: translateY(-50%);
-  z-index: 11;
-  width: 30px;
-  height: 100px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0 5px 5px 0;
-  cursor: pointer;
-  font-size: 14px;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transition: left 0.3s ease;
-}
+    /* ✅ 收折按鈕 */
+    #togglePanelBtn {
+      position: absolute;
+      top: 0;
+      right: -32px; /* 貼在右側外邊 */
+      height: 100%;  /* 等高 */
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      padding: 0 6px;
+      cursor: pointer;
+      font-size: 14px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
 
     select, textarea, input[type=text], button {
       width: 100%;
