@@ -21,7 +21,7 @@
     <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
       <img src="logo.jpg" alt="Logo" style="width:32px; height:32px;">
-      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器V9.2</span>
+      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器V9.2.8</span>
     </div>
     <!-- 操作簡介 -->
     <div style="background:rgba(255,255,255,0.9); padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
@@ -150,7 +150,7 @@
     // 5. fetchRouteByName：展開站點列表
     async function fetchRouteByName(name) {
       clearMapObjects(); stationData=[]; stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[];
-      const res = await fetch(`https://script.google.com/macros/s/.../exec?routeName=${encodeURIComponent(name)}`);
+      const res = await fetch(`https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec?routeName=${encodeURIComponent(name)}`);
       const d = await res.json();
       const list = document.getElementById('pointList'); list.innerHTML='';
       d.points.forEach((p,i)=>{
