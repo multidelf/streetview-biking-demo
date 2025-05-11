@@ -5,15 +5,11 @@
   <title>一騎出發吧｜街景模擬與坡度折線圖</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
+      margin: 0; padding: 0; height: 100%; overflow: hidden;
       font-family: sans-serif;
     }
     #map, #pano {
-      width: 100vw;
-      height: 100vh;
+      width: 100vw; height: 100vh;
     }
     #map {
       display: block;
@@ -22,33 +18,20 @@
       display: none;
     }
     #controlPanel {
-      position: absolute;
-      top: 60px;
-      left: 10px;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px;
-      width: 380px;
-      border-left: 5px solid #4CAF50;
-      border-radius: 5px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      position: absolute; top: 60px; left: 10px; z-index: 10;
+      background: rgba(255,255,255,0.95); padding: 12px; width: 380px;
+      border-left: 5px solid #4CAF50; border-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     select, textarea, input[type=text], button {
-      width: 100%;
-      margin-top: 6px;
-      padding: 6px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      width: 100%; margin-top: 6px; padding: 6px; font-size: 14px;
+      border: 1px solid #ccc; border-radius: 4px;
     }
     .mode-block {
-      display: none;
-      margin-top: 10px;
+      display: none; margin-top: 10px;
     }
     .checkbox-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 4px;
+      display: flex; align-items: center; margin-bottom: 4px;
     }
     .checkbox-row input[type=checkbox] {
       margin-right: 8px;
@@ -81,7 +64,7 @@
   <div id="controlPanel">
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
       <img src="logo.jpg" alt="Logo" style="width: 32px; height: 32px;" />
-      <span style="font-size: 18px; font-weight: bold;">一騎出發吧｜街景騎乘模擬器坡度研究版V9.2</span>
+      <span style="font-size: 18px; font-weight: bold;">一騎出發吧｜街景騎乘模擬器坡度計</span>
     </div>
     <div style="background: rgba(255, 255, 255, 0.9); padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
       <strong>操作簡介：</strong><br />
@@ -144,6 +127,7 @@
     let currentMode = 'map', stepIndex = 0, autoPlayTimer = null;
     const RESAMPLE_INTERVAL = 20; // 公尺
     let miniMapMarkers = [];
+    let routeNamesCache = null;
 
     // 坡度圖相關
     let elevationChart = null;
@@ -151,7 +135,24 @@
     let elevationLabels = [];
     let elevationCursorIndex = -1;
 
-    function initMap() {
+    async function fetchRouteNames() {
+      if (routeNamesCache) return routeNamesCache;
+      try {
+        const res = await fetch(apiBase);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        routeNamesCache = data.routes;
+        const sel = document.getElementById('routeSelect');
+        sel.innerHTML = '<option>請選擇路線</option>' + routeNamesCache.map(n => `<option value="${n}">${n}</option>`).join('');
+        return routeNamesCache;
+      } catch (error) {
+        console.error('載入路線列表失敗:', error);
+        alert('無法載入路線列表，請稍後再試');
+        return [];
+      }
+    }
+
+    async function initMap() {
       map = new google.maps.Map(document.getElementById('map'), { center: { lat: 24.15, lng: 120.68 }, zoom: 13 });
       panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), {
         position: { lat: 24.15, lng: 120.68 }, pov: { heading: 0, pitch: 0 }, visible: false,
@@ -164,11 +165,14 @@
       infoWindow = new google.maps.InfoWindow();
 
       setupAutocomplete();
-      fetchRouteNames();
+      await fetchRouteNames();
       document.getElementById('sheetBlock').style.display = 'block';
       document.getElementById('modeSelect').addEventListener('change', e => {
         document.querySelectorAll('.mode-block').forEach(b => b.style.display = 'none');
         document.getElementById(e.target.value + 'Block').style.display = 'block';
+      });
+      document.getElementById('routeSelect').addEventListener('change', () => {
+        fetchRouteByName(document.getElementById('routeSelect').value);
       });
       document.getElementById('planPolylineBtn').addEventListener('click', planPolyline);
       window.addEventListener('keydown', handleKey);
@@ -177,63 +181,38 @@
     }
     window.initMap = initMap;
 
-    function setupAutocomplete() {
-      const autoA = new google.maps.places.Autocomplete(document.getElementById('pointA'));
-      const autoB = new google.maps.places.Autocomplete(document.getElementById('pointB'));
-      autoA.addListener('place_changed', () => {
-        const p = autoA.getPlace(); if (!p.geometry) return;
-        if (markers.A) markers.A.setMap(null);
-        markers.A = new google.maps.Marker({ map, position: p.geometry.location });
-        infoWindow.setContent('起點：' + p.name);
-        infoWindow.open(map, markers.A);
-        map.setCenter(p.geometry.location);
-        toggleSearchBtn();
-      });
-      autoB.addListener('place_changed', () => {
-        const p = autoB.getPlace(); if (!p.geometry) return;
-        if (markers.B) markers.B.setMap(null);
-        markers.B = new google.maps.Marker({ map, position: p.geometry.location });
-        infoWindow.setContent('終點：' + p.name);
-        infoWindow.open(map, markers.B);
-        map.setCenter(p.geometry.location);
-        toggleSearchBtn();
-      });
-    }
-
-    function toggleSearchBtn() {
-      const a = document.getElementById('pointA').value.trim();
-      const b = document.getElementById('pointB').value.trim();
-      document.getElementById('searchBtn').disabled = !(a && b);
-    }
-
-    async function fetchRouteNames() {
-      const res = await fetch(apiBase);
-      const data = await res.json();
-      const sel = document.getElementById('routeSelect');
-      sel.innerHTML = '<option>請選擇路線</option>' + data.routes.map(n => `<option value="${n}">${n}</option>`).join('');
-      sel.addEventListener('change', () => fetchRouteByName(sel.value));
-    }
-
     async function fetchRouteByName(name) {
-      clearMapObjects(); stationData = []; stationMarkersMini.forEach(m => m.setMap(null)); stationMarkersMini = [];
-      const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
-      const d = await res.json();
-      const list = document.getElementById('pointList'); list.innerHTML = '';
-      d.points.forEach((p, i) => {
-        stationData.push({ position: { lat: p.lat, lng: p.lng }, name: p.name });
-        const row = document.createElement('div'); row.className = 'checkbox-row';
-        row.innerHTML = `<input type="checkbox" id="pt${i}"><label for="pt${i}">第${p.order}站 ${p.name}</label>`;
-        const cb = row.querySelector('input');
-        cb.addEventListener('change', () => {
-          if (cb.checked) {
-            const m = new google.maps.Marker({ map, position: { lat: p.lat, lng: p.lng } });
-            m.addListener('click', () => { infoWindow.setContent(p.name); infoWindow.open(map, m); });
-            markers[i] = m;
-            map.setCenter(m.getPosition());
-          } else if (markers[i]) markers[i].setMap(null);
+      if (!name || name === '請選擇路線') return;
+      clearMapObjects();
+      stationData = [];
+      stationMarkersMini.forEach(m => m.setMap(null));
+      stationMarkersMini = [];
+      try {
+        const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const d = await res.json();
+        const list = document.getElementById('pointList');
+        list.innerHTML = '';
+        d.points.forEach((p, i) => {
+          stationData.push({ position: { lat: p.lat, lng: p.lng }, name: p.name });
+          const row = document.createElement('div');
+          row.className = 'checkbox-row';
+          row.innerHTML = `<input type="checkbox" id="pt${i}"><label for="pt${i}">第${p.order}站 ${p.name}</label>`;
+          const cb = row.querySelector('input');
+          cb.addEventListener('change', () => {
+            if (cb.checked) {
+              const m = new google.maps.Marker({ map, position: { lat: p.lat, lng: p.lng } });
+              m.addListener('click', () => { infoWindow.setContent(p.name); infoWindow.open(map, m); });
+              markers[i] = m;
+              map.setCenter(m.getPosition());
+            } else if (markers[i]) markers[i].setMap(null);
+          });
+          list.appendChild(row);
         });
-        list.appendChild(row);
-      });
+      } catch (error) {
+        console.error('取得路線資料失敗:', error);
+        alert('無法取得路線資料，請稍後再試');
+      }
     }
 
     function drawPolylinePath(path) {
@@ -296,8 +275,7 @@
 
           createMiniMapClickableMarkers();
           fetchElevationAndDrawChart(polylinePath);
-          // 不顯示坡度圖，等切換街景時顯示
-          document.getElementById('miniMapContainer').style.display = 'none';
+          document.getElementById('miniMapContainer').style.display = 'none'; // 預設不顯示，切換街景時顯示
 
         } else alert('路線繪製失敗:' + status);
       });
@@ -339,7 +317,6 @@
 
           createMiniMapClickableMarkers();
           fetchElevationAndDrawChart(polylinePath);
-          // 不顯示坡度圖，等切換街景時顯示
           document.getElementById('miniMapContainer').style.display = 'none';
 
         } else alert('路線規劃失敗:' + status);
@@ -362,7 +339,6 @@
 
           createMiniMapClickableMarkers();
           fetchElevationAndDrawChart(polylinePath);
-          // 不顯示坡度圖，等切換街景時顯示
           document.getElementById('miniMapContainer').style.display = 'none';
 
         } else alert('搜尋失敗:' + status);
