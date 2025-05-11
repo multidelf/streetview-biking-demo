@@ -32,19 +32,19 @@
     }
 
     /* ✅ 收折按鈕樣式 */
-    #togglePanelBtn {
-      position: absolute;
-      top: 10px;
-      left: 0;
-      z-index: 11;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 0 4px 4px 0;
-      padding: 4px 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
+  #togglePanelBtn {
+  position: absolute;
+  top: 10px;
+  right: -30px; /* 貼齊右側外緣 */
+  z-index: 11;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px 0 0 4px; /* 圓角向左 */
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
 
     select, textarea, input[type=text], button {
       width: 100%;
@@ -92,7 +92,7 @@
 </head>
 <body>
   <!-- ✅ 左側收折按鈕 -->
-  <button id="togglePanelBtn" onclick="togglePanel()">⮜</button>
+  <button id="togglePanelBtn" onclick="togglePanel()">向左收起</button>
   <div id="controlPanel">
     <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -368,7 +368,7 @@
       const panel = document.getElementById('controlPanel');
       const btn = document.getElementById('togglePanelBtn');
       panel.classList.toggle('collapsed');
-      btn.textContent = panel.classList.contains('collapsed') ? '⮞' : '⮜';
+      btn.textContent = isCollapsed ? '展開' : '向左收起';
     }
   </script>
   </script>
