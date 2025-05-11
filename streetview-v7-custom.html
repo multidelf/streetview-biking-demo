@@ -8,116 +8,36 @@
     #map, #pano { width:100vw; height:100vh; }
     #map { display:block; }
     #pano, #miniMap { display:none; }
-    #controlPanel {
-      position: absolute;
-      top: 60px;
-      left: 10px;
-      z-index: 10;
-      background: rgba(255,255,255,0.95);
-      padding: 12px;
-      width: clamp(200px, 25vw, 380px);
-      max-height: calc(100vh - 80px);
-      overflow-y: auto;
-      font-size: clamp(13px, 1.2vw, 16px);
-      border-left: 5px solid #4CAF50;
-      border-radius: 5px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      transition: transform 0.3s ease;
-    }
-
-    /* ✅ 收折狀態 */
-    #controlPanel.collapsed {
-      transform: translateX(-95%);
-    }
-
-    /* ✅ 收折按鈕 */
-    #togglePanelBtn {
-      position: absolute;
-      top: 0;
-      right: -180px; /* 貼在右側外邊 */
-      width: clamp(15px, 25vw, 20px);
-      height: 100%;  /* 等高 */
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 0 5px 5px 0;
-      padding: 0 6px;
-      cursor: pointer;
-      font-size: 14px;
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-    }
-
-    select, textarea, input[type=text], button {
-      width: 100%;
-      margin-top: 6px;
-      padding: 6px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    .mode-block {
-      display: none;
-      margin-top: 10px;
-    }
-
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 4px;
-    }
-
-    .checkbox-row input[type=checkbox] {
-      margin-right: 8px;
-    }
-
-    #miniMap {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: clamp(200px, 25vw, 400px);
-      aspect-ratio: 2 / 1;
-      border: 2px solid #888;
-      z-index: 12;
-    }
-
-    @media (max-width: 600px) {
-      select, textarea, input[type=text], button {
-        font-size: 13px;
-        padding: 5px;
-      }
-
-      #pointList {
-        max-height: 150px;
-      }
-    }
+    #controlPanel { position:absolute; top:60px; left:10px; z-index:10; background:rgba(255,255,255,0.95); padding:12px; width: clamp(200px, 25vw, 380px); max-height: calc(100vh - 80px); overflow-y: auto; ; border-left:5px solid #4CAF50; border-radius:5px; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    select, textarea, input[type=text], button { width:100%; margin-top:6px; padding:6px; font-size:clamp(13px, 1.2vw, 16px); border:1px solid #ccc; border-radius:4px; }
+    .mode-block { display:none; margin-top:10px; }
+    .checkbox-row { display:flex; align-items:center; margin-bottom:4px; }
+    .checkbox-row input[type=checkbox] { margin-right:8px; }
+    #miniMap { position:absolute; bottom:10px; right:10px; clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; border:2px solid #888; z-index:12; }
   </style>
 </head>
 <body>
   <div id="controlPanel">
-    <!-- 收折按鈕 -->
-    <button id="togglePanelBtn" onclick="togglePanel()">向左收起</button>
     <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
       <img src="logo.jpg" alt="Logo" style="width:32px; height:32px;">
-      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器測試不穩定版</span>
+      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器V9.2.5</span>
     </div>
     <!-- 操作簡介 -->
-  <details open id="guideBlock" style="margin-bottom:10px;">
-  <summary style="font-weight:bold; font-size:14px; cursor:pointer;">▶ 操作簡介（點我展開／收合）</summary>
-  <div style="background:rgba(255,255,255,0.9); padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; margin-top:6px;">
-    • 🔽 路線下拉選單：從預設路線中選擇並多選站點<br>
-    • 📝 貼上經緯度：自訂座標並繪製站點<br>
-    • 📍 A → B 搜尋：輸入地址自動尋找點<br><br>
-    • 以上任選一項完成後，點選"切換街景"開始模擬騎乘<br><br>
-    • W / ↑：前進一段距離<br>
-    • S / ↓：後退一段距離<br>
-    • A / D：左右旋轉視角<br>
-    • 滑鼠拖曳：旋轉街景視角<br>
-    • 街景導航僅可依照規劃路線前進
-  </div>
-</details>
+    <div style="background:rgba(255,255,255,0.9); padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+      <strong>操作簡介：</strong><br>
+      • 🔽 路線下拉選單：從預設路線中選擇並多選站點<br>
+      • 📝 貼上經緯度：自訂座標並繪製站點<br>
+      • 📍 A → B 搜尋：輸入地址自動尋找點<br>
+         <br>
+      • 以上任選一項完成後，點選"切換街景"開始模擬騎乘<br>
+          <br>
+      • W / ↑：前進一段距離<br>
+      • S / ↓：後退一段距離<br>
+      • A / D：左右旋轉視角<br>
+      • 滑鼠拖曳：旋轉街景視角<br>
+      • 街景導航僅可依照規劃路線前進
+    </div>
     <!-- 選擇模式 -->
     <label>📌 選擇輸入模式</label>
     <select id="modeSelect">
@@ -367,14 +287,6 @@
         }, 1500);
       }
     }
-
-    function togglePanel() {
-      const panel = document.getElementById('controlPanel');
-      const btn = document.getElementById('togglePanelBtn');
-      const collapsed = panel.classList.toggle('collapsed');
-      btn.textContent = collapsed ? '展開面板' : '向左收起';
-    }
-  </script>
   </script>
 </body>
 </html>
