@@ -26,9 +26,9 @@
       transform: translateX(0);
     }
 
-    #controlPanel.collapsed {
-      transform: translateX(-95%);
-    }
+    #controlPanel.collapsed + #togglePanelBtn {
+  left: 0px; /* 貼齊螢幕邊 */
+}
 
     #togglePanelBtn {
       position: absolute;
