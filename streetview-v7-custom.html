@@ -14,7 +14,7 @@
     #map {
       display: block;
     }
-    #pano, #miniMap {
+    #pano, #miniMapContainer {
       display: none;
     }
     #controlPanel {
@@ -36,12 +36,26 @@
     .checkbox-row input[type=checkbox] {
       margin-right: 8px;
     }
+    #miniMapContainer {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 400px;
+      z-index: 12;
+    }
     #miniMap {
-      position: absolute; bottom: 10px; right: 10px;
-      width: 400px; height: 200px; border: 2px solid #888; z-index: 12;
+      width: 400px;
+      height: 200px;
+      border: 2px solid #888;
+    }
+    #elevationChartContainer {
+      width: 400px;
+      height: 150px;
+      margin-top: 6px;
     }
     #elevationChart {
-      margin-top: 10px; width: 100%; height: 150px;
+      width: 400px !important;
+      height: 150px !important;
     }
   </style>
 </head>
@@ -91,17 +105,22 @@
       <button id="toggleViewBtn" onclick="toggleView()" style="display:none;">切換街景/地圖</button>
       <button id="autoPlayBtn" onclick="startAutoPlay()" style="display:none; margin-top:6px;">開始自動導航</button>
     </div>
-    <canvas id="elevationChart"></canvas>
   </div>
 
   <div id="map"></div>
   <div id="pano"></div>
-  <div id="miniMap"></div>
+
+  <div id="miniMapContainer">
+    <div id="miniMap"></div>
+    <div id="elevationChartContainer">
+      <canvas id="elevationChart"></canvas>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places,geometry&callback=initMap"></script>
   <script>
-    const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
+    const apiBase = "https://script.google.com/macros/s/AKfycbzctNoMZS3m3FX3m3FX3q1s3Ka4ZgK-bVsMKkOh0rL9IQaS1wO1dprzkUcCpZqE4YpQW7vtA/exec";
     let map, panorama, miniMap, miniMarker, miniPolyline, infoWindow;
     let markers = [], stationData = [], stationMarkersMini = [], polyline, polylinePath = [];
     let currentMode = 'map', stepIndex = 0, autoPlayTimer = null;
@@ -312,7 +331,7 @@
       if(currentMode==='map'){
         document.getElementById('map').style.display='none';
         document.getElementById('pano').style.display='block';
-        document.getElementById('miniMap').style.display='block';
+        document.getElementById('miniMapContainer').style.display='block';
         panorama.setVisible(true);
         panorama.setPosition(polylinePath[0]);
         updateMiniMap();
@@ -320,7 +339,7 @@
         autoBtn.style.display = 'inline-block';
       } else {
         document.getElementById('pano').style.display='none';
-        document.getElementById('miniMap').style.display='none';
+        document.getElementById('miniMapContainer').style.display='none';
         document.getElementById('map').style.display='block';
         panorama.setVisible(false);
         currentMode='map';
@@ -405,7 +424,7 @@
           currentMode = 'street';
           document.getElementById('map').style.display = 'none';
           document.getElementById('pano').style.display = 'block';
-          document.getElementById('miniMap').style.display = 'block';
+          document.getElementById('miniMapContainer').style.display = 'block';
           document.getElementById('autoPlayBtn').style.display = 'inline-block';
           document.getElementById('toggleViewBtn').style.display = 'inline-block';
 
@@ -470,6 +489,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           scales: {
             x: {
               display: true,
