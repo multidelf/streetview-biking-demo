@@ -30,23 +30,24 @@
   left: 0px; /* 貼齊螢幕邊 */
 }
 
-    #togglePanelBtn {
-      position: absolute;
-      top: 0;
-      right: -40px;
-      height: 100%;
-      width: 20px;
-      z-index: 11;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 0 5px 5px 0;
-      padding: 0 10px;
-      cursor: pointer;
-      font-size: 14px;
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-    }
+  #togglePanelBtn {
+  position: absolute;
+  top: 50%; /* 垂直置中 */
+  left: calc(clamp(200px, 25vw, 380px) + 20px); /* 貼齊面板右邊 */
+  transform: translateY(-50%);
+  z-index: 11;
+  width: 30px;
+  height: 100px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+  font-size: 14px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transition: left 0.3s ease;
+}
 
     select, textarea, input[type=text], button {
       width: 100%;
