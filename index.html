@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>一騎出發吧｜街景模擬</title>
+  <title>一騎出發吧｜街景模擬器 V9.3</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
     #map, #pano { width:100vw; height:100vh; }
@@ -18,18 +18,18 @@
 </head>
 <body>
   <div id="controlPanel">
+    <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-      <img src="logo.jpg" alt="Logo" style="width:32px; height:32px;">
-      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器V9.1</span>
+      <img src="logo.png" alt="Logo" style="width:32px; height:32px;">
+      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器</span>
     </div>
+    <!-- 操作簡介 -->
     <div style="background:rgba(255,255,255,0.9); padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
       <strong>操作簡介：</strong><br>
       • 🔽 路線下拉選單：從預設路線中選擇並多選站點<br>
       • 📝 貼上經緯度：自訂座標並繪製站點<br>
       • 📍 A → B 搜尋：輸入地址自動尋找點<br>
-         <br>
-      • 以上任選一項完成後，點選"切換街景"開始模擬騎乘<br>
-          <br>
+      <br>
       • W / ↑：前進一段距離<br>
       • S / ↓：後退一段距離<br>
       • A / D：左右旋轉視角<br>
@@ -197,7 +197,29 @@
     function drawFromAB(){ stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[]; clearMapObjects(); new google.maps.DirectionsService().route({ origin:document.getElementById('pointA').value, destination:document.getElementById('pointB').value, travelMode:'BICYCLING' }, (res,status)=>{ if(status==='OK'){ polylinePath=resamplePath(res.routes[0].overview_path,RESAMPLE_INTERVAL); drawPolylinePath(polylinePath); miniPolyline.setPath(polylinePath); document.getElementById('toggleViewBtn').style.display='inline-block'; document.getElementById('autoPlayBtn').style.display='inline-block'; } else alert('搜尋失敗:'+status); }); }
 
     // 13. toggleView：切換街景/地圖
-    function toggleView(){ if(currentMode==='map'){ document.getElementById('map').style.display='none'; document.getElementById('pano').style.display='block'; document.getElementById('miniMap').style.display='block'; panorama.setVisible(true); panorama.setPosition(polylinePath[0]); updateMiniMap(); currentMode='street'; } else { document.getElementById('pano').style.display='none'; document.getElementById('miniMap').style.display='none'; document.getElementById('map').style.display='block'; panorama.setVisible(false); currentMode='map'; }}
+    function toggleView(){
+      const autoBtn = document.getElementById('autoPlayBtn');
+      if(currentMode==='map'){
+        document.getElementById('map').style.display='none';
+        document.getElementById('pano').style.display='block';
+        document.getElementById('miniMap').style.display='block';
+        panorama.setVisible(true);
+        panorama.setPosition(polylinePath[0]);
+        updateMiniMap();
+        currentMode='street';
+        // 進入街景模式後顯示自動導航按鈕
+        autoBtn.style.display = 'inline-block';
+      } else {
+        document.getElementById('pano').style.display='none';
+        document.getElementById('miniMap').style.display='none';
+        document.getElementById('map').style.display='block';
+        panorama.setVisible(false);
+        currentMode='map';
+        // 返回地圖模式後隱藏自動導航按鈕
+        autoBtn.style.display = 'none';
+      }
+    }
+else { document.getElementById('pano').style.display='none'; document.getElementById('miniMap').style.display='none'; document.getElementById('map').style.display='block'; panorama.setVisible(false); currentMode='map'; }}
 
     // 14. handleKey：鍵盤導航
     function handleKey(e){ if(currentMode!=='street'||!polylinePath.length) return; if(e.key==='ArrowUp'||e.key.toLowerCase()==='w') moveAlongPath(1); if(e.key==='ArrowDown'||e.key.toLowerCase()==='s') moveAlongPath(-1); if(e.key.toLowerCase()==='a') panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading-15}); if(e.key.toLowerCase()==='d') panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading+15}); updateMiniMap(); }
@@ -209,7 +231,7 @@
     function updateMiniMap(){ const pos=panorama.getPosition(); miniMap.setCenter(pos); miniMap.setHeading(panorama.getPov().heading||0); miniMarker.setPosition(pos); miniMarker.setIcon({ path:google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:5, rotation:panorama.getPov().heading||0 }); miniPolyline.setPath(polylinePath); }
 
     // 17. startAutoPlay：自動導航播放
-    function startAutoPlay(){ const btn=document.getElementById('autoPlayBtn'); if(autoPlayTimer){ clearInterval(autoPlayTimer); autoPlayTimer=null; btn.textContent='開始自動導航'; } else { btn.textContent='停止自動導航'; autoPlayTimer=setInterval(()=>{ if(stepIndex<polylinePath.length-1) moveAlongPath(1); else startAutoPlay(); }, 1500); }}
+    function startAutoPlay(){ const btn=document.getElementById('autoPlayBtn'); if(autoPlayTimer){ clearInterval(autoPlayTimer); autoPlayTimer=null; btn.textContent='開始自動導航'; } else { btn.textContent='停止自動導航'; autoPlayTimer=setInterval(()=>{ if(stepIndex<polylinePath.length-1) moveAlongPath(1); else startAutoPlay(); }, 1000); }}
   </script>
 </body>
 </html>
