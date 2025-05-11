@@ -37,8 +37,7 @@
       • A / D：左右旋轉視角<br>
       • 滑鼠拖曳：旋轉街景視角<br>
       • 街景導航僅可依照規劃路線前進
-    </div>
-    <!-- 選擇模式 -->
+    </div>    <!-- 選擇模式 -->
     <label>📌 選擇輸入模式</label>
     <select id="modeSelect">
       <option value="sheet">🔽 路線下拉選單</option>
@@ -186,7 +185,44 @@
     function resamplePath(path, interval) { if(path.length<2) return path; const result=[path[0]]; let acc=0; for(let i=1;i<path.length;i++){ const p0=path[i-1], p1=path[i]; const segLen=google.maps.geometry.spherical.computeDistanceBetween(p0,p1); let dist=interval-acc; while(dist<segLen){ const frac=dist/segLen; result.push(google.maps.geometry.spherical.interpolate(p0,p1,frac)); dist+=interval; } acc=(acc+segLen)%interval; result.push(p1);} return result; }
 
     // 9. planPolyline：規劃路線並更新小地圖與站點標示
-    function planPolyline(){ stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[]; const pts=stationData.filter((s,i)=>document.getElementById('pt'+i).checked).map(s=>s.position); if(pts.length<2){ alert('請至少選擇兩個站點'); return; } new google.maps.DirectionsService().route({ origin:pts[0], destination:pts.at(-1), waypoints:pts.slice(1,-1).map(p=>({location:p})), travelMode:'BICYCLING' }, (res,status) => { if(status==='OK'){ polylinePath=resamplePath(res.routes[0].overview_path,RESAMPLE_INTERVAL); drawPolylinePath(polylinePath); miniPolyline.setPath(polylinePath); stationData.forEach((s,i)=>{ if(document.getElementById('pt'+i).checked){ const mm=new google.maps.Marker({ map:miniMap, position:s.position, title:s.name, label:{text:s.name, color:'black', fontSize:'10px'} }); stationMarkersMini.push(mm);} }); document.getElementById('toggleViewBtn').style.display='inline-block'; document.getElementById('autoPlayBtn').style.display='inline-block'; } else alert('路線繪製失敗:'+status); }); }
+    function planPolyline(){
+      stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[];
+      clearMapObjects();
+      // 收集被勾選的站點座標
+      const checkboxes = document.querySelectorAll('#pointList input[type=checkbox]');
+      const pts = [];
+      checkboxes.forEach((cb, idx) => {
+        if (cb && cb.checked && stationData[idx]) {
+          pts.push(stationData[idx].position);
+        }
+      });
+      if (pts.length < 2) { alert('請至少選擇兩個站點'); return; }
+      new google.maps.DirectionsService().route({
+        origin: pts[0],
+        destination: pts.at(-1),
+        waypoints: pts.slice(1, -1).map(p => ({ location: p })),
+        travelMode: 'BICYCLING'
+      }, (res, status) => {
+        if (status === 'OK') {
+          polylinePath = resamplePath(res.routes[0].overview_path, RESAMPLE_INTERVAL);
+          drawPolylinePath(polylinePath);
+          miniPolyline.setPath(polylinePath);
+          // 小地圖站點標示
+          stationData.forEach((s, i) => {
+            if (checkboxes[i] && checkboxes[i].checked) {
+              const mm = new google.maps.Marker({
+                map: miniMap,
+                position: s.position,
+                title: s.name,
+                label: { text: s.name, color: 'black', fontSize: '10px' }
+              });
+              stationMarkersMini.push(mm);
+            }
+          });
+          document.getElementById('toggleViewBtn').style.display = 'inline-block';
+        } else alert('路線繪製失敗:' + status);
+      });
+    }new google.maps.DirectionsService().route({ origin:pts[0], destination:pts.at(-1), waypoints:pts.slice(1,-1).map(p=>({location:p})), travelMode:'BICYCLING' }, (res,status) => { if(status==='OK'){ polylinePath=resamplePath(res.routes[0].overview_path,RESAMPLE_INTERVAL); drawPolylinePath(polylinePath); miniPolyline.setPath(polylinePath); stationData.forEach((s,i)=>{ if(document.getElementById('pt'+i).checked){ const mm=new google.maps.Marker({ map:miniMap, position:s.position, title:s.name, label:{text:s.name, color:'black', fontSize:'10px'} }); stationMarkersMini.push(mm);} }); document.getElementById('toggleViewBtn').style.display='inline-block'; document.getElementById('autoPlayBtn').style.display='inline-block'; } else alert('路線繪製失敗:'+status); }); }
 
     // 10. selectAll／clearAll
     function selectAll(){ document.querySelectorAll('#pointList input[type=checkbox]').forEach(cb=>{cb.checked=true;cb.dispatchEvent(new Event('change'));}); }
