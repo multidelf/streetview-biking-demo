@@ -23,32 +23,29 @@
       border-radius: 5px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       transition: transform 0.3s ease;
-      transform: translateX(0); /* 預設展開 */
+      transform: translateX(0);
     }
 
-    /* ✅ 收折狀態 */
     #controlPanel.collapsed {
       transform: translateX(-95%);
     }
 
-    /* ✅ 收折按鈕樣式 */
-  #togglePanelBtn {
-  position: absolute;
-  top: 0;
-  left: 100%; /* 貼在右側外邊 */
-  height: 100%; /* 等高於 controlPanel */
-  z-index: 11;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0 5px 5px 0;
-  padding: 0 10px; /* 左右留空，避免太細 */
-  cursor: pointer;
-  font-size: 14px;
-  writing-mode: vertical-rl; /* 文字垂直書寫 */
-  text-orientation: mixed;
-}
-
+    #togglePanelBtn {
+      position: absolute;
+      top: 0;
+      right: -40px;
+      height: 100%;
+      z-index: 11;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 14px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
 
     select, textarea, input[type=text], button {
       width: 100%;
@@ -63,31 +60,33 @@
       display: none;
       margin-top: 10px;
     }
+
     .checkbox-row {
       display: flex;
       align-items: center;
       margin-bottom: 4px;
     }
+
     .checkbox-row input[type=checkbox] {
       margin-right: 8px;
     }
 
-  #miniMap {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: clamp(200px, 25vw, 400px);
-  aspect-ratio: 2 / 1;
-  border: 2px solid #888;
-  z-index: 12;
-}
+    #miniMap {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: clamp(200px, 25vw, 400px);
+      aspect-ratio: 2 / 1;
+      border: 2px solid #888;
+      z-index: 12;
+    }
 
-    /* ✅ 手機寬度下的調整 */
     @media (max-width: 600px) {
       select, textarea, input[type=text], button {
         font-size: 13px;
         padding: 5px;
       }
+
       #pointList {
         max-height: 150px;
       }
@@ -95,9 +94,9 @@
   </style>
 </head>
 <body>
-  <!-- ✅ 左側收折按鈕 -->
-  <button id="togglePanelBtn" onclick="togglePanel()">向左收起</button>
   <div id="controlPanel">
+    <!-- 收折按鈕 -->
+    <button id="togglePanelBtn" onclick="togglePanel()">向左收起</button>
     <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
       <img src="logo.jpg" alt="Logo" style="width:32px; height:32px;">
