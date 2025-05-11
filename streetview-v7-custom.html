@@ -34,17 +34,21 @@
     /* ✅ 收折按鈕樣式 */
   #togglePanelBtn {
   position: absolute;
-  top: 10px;
-  right: -85px; /* 貼齊右側外緣 */
+  top: 0;
+  left: 100%; /* 貼在右側外邊 */
+  height: 100%; /* 等高於 controlPanel */
   z-index: 11;
   background: #4CAF50;
   color: white;
   border: none;
-  border-radius: 4px 0 0 4px; /* 圓角向左 */
-  padding: 4px 8px;
+  border-radius: 0 5px 5px 0;
+  padding: 0 10px; /* 左右留空，避免太細 */
   cursor: pointer;
   font-size: 14px;
+  writing-mode: vertical-rl; /* 文字垂直書寫 */
+  text-orientation: mixed;
 }
+
 
     select, textarea, input[type=text], button {
       width: 100%;
