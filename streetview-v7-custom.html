@@ -68,15 +68,15 @@
       margin-right: 8px;
     }
 
-    #miniMap {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: 400px;
-      height: 200px;
-      border: 2px solid #888;
-      z-index: 12;
-    }
+  #miniMap {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: clamp(200px, 25vw, 400px);
+  height: 200px;
+  border: 2px solid #888;
+  z-index: 12;
+}
 
     /* ✅ 手機寬度下的調整 */
     @media (max-width: 600px) {
