@@ -209,7 +209,7 @@
     function updateMiniMap(){ const pos=panorama.getPosition(); miniMap.setCenter(pos); miniMap.setHeading(panorama.getPov().heading||0); miniMarker.setPosition(pos); miniMarker.setIcon({ path:google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:5, rotation:panorama.getPov().heading||0 }); miniPolyline.setPath(polylinePath); }
 
     // 17. startAutoPlay：自動導航播放
-    function startAutoPlay(){ const btn=document.getElementById('autoPlayBtn'); if(autoPlayTimer){ clearInterval(autoPlayTimer); autoPlayTimer=null; btn.textContent='開始自動導航'; } else { btn.textContent='停止自動導航'; autoPlayTimer=setInterval(()=>{ if(stepIndex<polylinePath.length-1) moveAlongPath(1); else startAutoPlay(); }, 1000); }}
+    function startAutoPlay(){ const btn=document.getElementById('autoPlayBtn'); if(autoPlayTimer){ clearInterval(autoPlayTimer); autoPlayTimer=null; btn.textContent='開始自動導航'; } else { btn.textContent='停止自動導航'; autoPlayTimer=setInterval(()=>{ if(stepIndex<polylinePath.length-1) moveAlongPath(1); else startAutoPlay(); }, 1500); }}
   </script>
 </body>
 </html>
