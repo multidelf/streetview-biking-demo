@@ -8,46 +8,90 @@
     #map, #pano { width:100vw; height:100vh; }
     #map { display:block; }
     #pano, #miniMap { display:none; }
-    #controlPanel { position:absolute; top:60px; left:10px; z-index:10; background:rgba(255,255,255,0.95); padding:12px; width: clamp(200px, 25vw, 380px); max-height: calc(100vh - 80px); overflow-y: auto; font-size: clamp(13px, 1.2vw, 16px); border-left:5px solid #4CAF50; border-radius:5px; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-    select, textarea, input[type=text], button { width:100%; margin-top:6px; padding:6px; font-size:14px; border:1px solid #ccc; border-radius:4px; }
-    transition: transform 0.3s ease;
-    transform: translateX(0); /* 預設展開 */
-}
+        #controlPanel {
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255,255,255,0.95);
+      padding: 12px;
+      width: clamp(200px, 25vw, 380px);
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+      font-size: clamp(13px, 1.2vw, 16px);
+      border-left: 5px solid #4CAF50;
+      border-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+      transform: translateX(0); /* 預設展開 */
+    }
 
-#controlPanel.collapsed {
-  transform: translateX(-95%);
-}
-#togglePanelBtn {
-  position: absolute;
-  top: 10px;
-  left: 0;
-  z-index: 11;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0 4px 4px 0;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-    .mode-block { display:none; margin-top:10px; }
-    .checkbox-row { display:flex; align-items:center; margin-bottom:4px; }
-    .checkbox-row input[type=checkbox] { margin-right:8px; }
-    #miniMap { position:absolute; bottom:10px; right:10px; width:400px; height:200px; border:2px solid #888; z-index:12; }
+    /* ✅ 收折狀態 */
+    #controlPanel.collapsed {
+      transform: translateX(-95%);
+    }
+
+    /* ✅ 收折按鈕樣式 */
+    #togglePanelBtn {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      z-index: 11;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 0 4px 4px 0;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    select, textarea, input[type=text], button {
+      width: 100%;
+      margin-top: 6px;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .mode-block {
+      display: none;
+      margin-top: 10px;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .checkbox-row input[type=checkbox] {
+      margin-right: 8px;
+    }
+
+    #miniMap {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 400px;
+      height: 200px;
+      border: 2px solid #888;
+      z-index: 12;
+    }
+
+    /* ✅ 手機寬度下的調整 */
     @media (max-width: 600px) {
-
-  select, textarea, input[type=text], button {
-    font-size: 13px;
-    padding: 5px;
-  }
-
-  #pointList {
-    max-height: 150px;
-  }
-}
+      select, textarea, input[type=text], button {
+        font-size: 13px;
+        padding: 5px;
+      }
+      #pointList {
+        max-height: 150px;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- ✅ 左側收折按鈕 -->
   <button id="togglePanelBtn" onclick="togglePanel()">⮜</button>
   <div id="controlPanel">
     <!-- Logo and title -->
