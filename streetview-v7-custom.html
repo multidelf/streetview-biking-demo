@@ -16,9 +16,27 @@
     #miniMap { position:absolute; bottom:10px; right:10px; width:400px; height:200px; border:2px solid #888; z-index:12; }
     @media (max-width: 600px) {
   #controlPanel {
-    font-size: 13px;
-    padding: 10px;
-  }
+  transition: transform 0.3s ease;
+  transform: translateX(0); /* 預設展開 */
+}
+
+#controlPanel.collapsed {
+  transform: translateX(-95%);
+}
+#togglePanelBtn {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  z-index: 11;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
 
   select, textarea, input[type=text], button {
     font-size: 13px;
@@ -32,6 +50,7 @@
   </style>
 </head>
 <body>
+  <button id="togglePanelBtn" onclick="togglePanel()">⮜</button>
   <div id="controlPanel">
     <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -302,6 +321,14 @@
         }, 1500);
       }
     }
+
+    function togglePanel() {
+      const panel = document.getElementById('controlPanel');
+      const btn = document.getElementById('togglePanelBtn');
+      panel.classList.toggle('collapsed');
+      btn.textContent = panel.classList.contains('collapsed') ? '⮞' : '⮜';
+    }
+  </script>
   </script>
 </body>
 </html>
