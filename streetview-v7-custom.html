@@ -316,7 +316,10 @@ function fetchElevationAndDrawChart(polylinePath) {
   }).then(response => {
     const elevations = response.results;
 
-    // 取得高程與距離
+// ✅ 顯示高程圖容器
+document.getElementById('elevationChartContainer').style.display = 'block';
+    
+// 取得高程與距離
     const elevationData = elevations.map(e => e.elevation);
     const distanceData = elevations.map((_, i) => (i * getPathLength(polylinePath) / 256).toFixed(0));
 
