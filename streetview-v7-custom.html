@@ -9,15 +9,18 @@
     #map { display:block; }
     #pano, #miniMap { display:none; }
     #controlPanel { position:absolute; top:60px; left:10px; z-index:10; background:rgba(255,255,255,0.95); padding:12px; width: clamp(200px, 25vw, 380px); max-height: calc(100vh - 80px); overflow-y: auto; ; border-left:5px solid #4CAF50; border-radius:5px; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-    select, textarea, input[type=text], button { width:100%; margin-top:6px; padding:6px; font-size:clamp(13px, 1.2vw, 16px); border:1px solid #ccc; border-radius:4px; }
+    select, textarea, input[type=text], button { width:100%; margin-top:6px; padding:6px; font-size:clamp(13px, 1.2vw, 16px); border:1px solid #ccc; border-radius:4px; transition: transform 0.3s ease; }
     .mode-block { display:none; margin-top:10px; }
     .checkbox-row { display:flex; align-items:center; margin-bottom:4px; }
     .checkbox-row input[type=checkbox] { margin-right:8px; }
+    #controlPanel.collapsed { transform: translateX(-95%); }
     #miniMap { position:absolute; bottom:10px; right:10px; clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; border:2px solid #888; z-index:12; }
+    #togglePanelBtn { position: absolute; top: 0; right: -32px; height: 100%; background: #4CAF50; color: white;  border: none;  border-radius: 0 5px 5px 0;  padding: 0 6px;  cursor: pointer;  writing-mode: vertical-rl;  text-orientation: mixed;  z-index: 11; }
   </style>
 </head>
 <body>
   <div id="controlPanel">
+    <button id="togglePanelBtn" onclick="togglePanel()">⮜ 收起</button>
     <!-- Logo and title -->
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
       <img src="logo.jpg" alt="Logo" style="width:32px; height:32px;">
@@ -287,6 +290,11 @@
         }, 1500);
       }
     }
+  function togglePanel() {
+    const panel = document.getElementById('controlPanel');
+    const btn = document.getElementById('togglePanelBtn');
+    const isCollapsed = panel.classList.toggle('collapsed');
+    btn.textContent = isCollapsed ? '⮞ 展開' : '⮜ 收起'; }
   </script>
 </body>
 </html>
