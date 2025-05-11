@@ -5,11 +5,15 @@
   <title>一騎出發吧｜街景模擬與坡度折線圖</title>
   <style>
     html, body {
-      margin: 0; padding: 0; height: 100%; overflow: hidden;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
       font-family: sans-serif;
     }
     #map, #pano {
-      width: 100vw; height: 100vh;
+      width: 100vw;
+      height: 100vh;
     }
     #map {
       display: block;
@@ -18,20 +22,33 @@
       display: none;
     }
     #controlPanel {
-      position: absolute; top: 60px; left: 10px; z-index: 10;
-      background: rgba(255,255,255,0.95); padding: 12px; width: 380px;
-      border-left: 5px solid #4CAF50; border-radius: 5px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      width: 380px;
+      border-left: 5px solid #4CAF50;
+      border-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
     select, textarea, input[type=text], button {
-      width: 100%; margin-top: 6px; padding: 6px; font-size: 14px;
-      border: 1px solid #ccc; border-radius: 4px;
+      width: 100%;
+      margin-top: 6px;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
     .mode-block {
-      display: none; margin-top: 10px;
+      display: none;
+      margin-top: 10px;
     }
     .checkbox-row {
-      display: flex; align-items: center; margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
     }
     .checkbox-row input[type=checkbox] {
       margin-right: 8px;
@@ -42,6 +59,7 @@
       right: 10px;
       width: 400px;
       z-index: 12;
+      display: none; /* 預設隱藏，切換街景時才顯示 */
     }
     #miniMap {
       width: 400px;
@@ -61,11 +79,11 @@
 </head>
 <body>
   <div id="controlPanel">
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-      <img src="logo.jpg" alt="Logo" style="width:32px; height:32px;" />
-      <span style="font-size:18px; font-weight:bold;">一騎出發吧｜街景騎乘模擬器V9.2</span>
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+      <img src="logo.jpg" alt="Logo" style="width: 32px; height: 32px;" />
+      <span style="font-size: 18px; font-weight: bold;">一騎出發吧｜街景騎乘模擬器坡度研究版V9.2</span>
     </div>
-    <div style="background:rgba(255,255,255,0.9); padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+    <div style="background: rgba(255, 255, 255, 0.9); padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
       <strong>操作簡介：</strong><br />
       - 🔽 路線下拉選單：從預設路線中選擇並多選站點<br />
       - 📝 貼上經緯度：自訂座標並繪製站點<br />
@@ -85,11 +103,11 @@
     </select>
     <div class="mode-block" id="sheetBlock">
       <select id="routeSelect"><option>請選擇路線</option></select>
-      <div style="display:flex; gap:10px;">
+      <div style="display: flex; gap: 10px;">
         <button onclick="selectAll()">全選</button>
         <button onclick="clearAll()">取消全選</button>
       </div>
-      <div id="pointList" style="max-height:200px; overflow:auto;"></div>
+      <div id="pointList" style="max-height: 200px; overflow: auto;"></div>
       <button id="planPolylineBtn">規劃路線</button>
     </div>
     <div class="mode-block" id="pasteBlock">
@@ -101,9 +119,9 @@
       <input id="pointB" placeholder="終點地名或地址" />
       <button id="searchBtn" onclick="drawFromAB()" disabled>搜尋路線標記</button>
     </div>
-    <div style="margin-top:10px;">
-      <button id="toggleViewBtn" onclick="toggleView()" style="display:none;">切換街景/地圖</button>
-      <button id="autoPlayBtn" onclick="startAutoPlay()" style="display:none; margin-top:6px;">開始自動導航</button>
+    <div style="margin-top: 10px;">
+      <button id="toggleViewBtn" onclick="toggleView()" style="display: none;">切換街景/地圖</button>
+      <button id="autoPlayBtn" onclick="startAutoPlay()" style="display: none; margin-top: 6px;">開始自動導航</button>
     </div>
   </div>
 
@@ -134,23 +152,23 @@
     let elevationCursorIndex = -1;
 
     function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), { center:{lat:24.15,lng:120.68}, zoom:13 });
+      map = new google.maps.Map(document.getElementById('map'), { center: { lat: 24.15, lng: 120.68 }, zoom: 13 });
       panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), {
-        position:{lat:24.15,lng:120.68}, pov:{heading:0,pitch:0}, visible:false,
-        motionTracking:false, motionTrackingControl:false
+        position: { lat: 24.15, lng: 120.68 }, pov: { heading: 0, pitch: 0 }, visible: false,
+        motionTracking: false, motionTrackingControl: false
       });
       map.setStreetView(panorama);
-      miniMap = new google.maps.Map(document.getElementById('miniMap'), { center:{lat:24.15,lng:120.68}, zoom:16, disableDefaultUI:true });
-      miniMarker = new google.maps.Marker({ map:miniMap, position:{lat:24.15,lng:120.68}, icon:{ path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:5, rotation:0 } });
-      miniPolyline = new google.maps.Polyline({ map:miniMap, path:[], strokeColor:'#FF5722', strokeWeight:3 });
+      miniMap = new google.maps.Map(document.getElementById('miniMap'), { center: { lat: 24.15, lng: 120.68 }, zoom: 16, disableDefaultUI: true });
+      miniMarker = new google.maps.Marker({ map: miniMap, position: { lat: 24.15, lng: 120.68 }, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 5, rotation: 0 } });
+      miniPolyline = new google.maps.Polyline({ map: miniMap, path: [], strokeColor: '#FF5722', strokeWeight: 3 });
       infoWindow = new google.maps.InfoWindow();
 
       setupAutocomplete();
       fetchRouteNames();
       document.getElementById('sheetBlock').style.display = 'block';
       document.getElementById('modeSelect').addEventListener('change', e => {
-        document.querySelectorAll('.mode-block').forEach(b => b.style.display='none');
-        document.getElementById(e.target.value + 'Block').style.display='block';
+        document.querySelectorAll('.mode-block').forEach(b => b.style.display = 'none');
+        document.getElementById(e.target.value + 'Block').style.display = 'block';
       });
       document.getElementById('planPolylineBtn').addEventListener('click', planPolyline);
       window.addEventListener('keydown', handleKey);
@@ -163,8 +181,8 @@
       const autoA = new google.maps.places.Autocomplete(document.getElementById('pointA'));
       const autoB = new google.maps.places.Autocomplete(document.getElementById('pointB'));
       autoA.addListener('place_changed', () => {
-        const p = autoA.getPlace(); if(!p.geometry) return;
-        if(markers.A) markers.A.setMap(null);
+        const p = autoA.getPlace(); if (!p.geometry) return;
+        if (markers.A) markers.A.setMap(null);
         markers.A = new google.maps.Marker({ map, position: p.geometry.location });
         infoWindow.setContent('起點：' + p.name);
         infoWindow.open(map, markers.A);
@@ -172,8 +190,8 @@
         toggleSearchBtn();
       });
       autoB.addListener('place_changed', () => {
-        const p = autoB.getPlace(); if(!p.geometry) return;
-        if(markers.B) markers.B.setMap(null);
+        const p = autoB.getPlace(); if (!p.geometry) return;
+        if (markers.B) markers.B.setMap(null);
         markers.B = new google.maps.Marker({ map, position: p.geometry.location });
         infoWindow.setContent('終點：' + p.name);
         infoWindow.open(map, markers.B);
@@ -197,152 +215,177 @@
     }
 
     async function fetchRouteByName(name) {
-      clearMapObjects(); stationData = []; stationMarkersMini.forEach(m => m.setMap(null)); stationMarkersMini=[];
+      clearMapObjects(); stationData = []; stationMarkersMini.forEach(m => m.setMap(null)); stationMarkersMini = [];
       const res = await fetch(`${apiBase}?routeName=${encodeURIComponent(name)}`);
       const d = await res.json();
       const list = document.getElementById('pointList'); list.innerHTML = '';
       d.points.forEach((p, i) => {
-        stationData.push({ position:{lat:p.lat,lng:p.lng}, name: p.name });
-        const row = document.createElement('div'); row.className='checkbox-row';
+        stationData.push({ position: { lat: p.lat, lng: p.lng }, name: p.name });
+        const row = document.createElement('div'); row.className = 'checkbox-row';
         row.innerHTML = `<input type="checkbox" id="pt${i}"><label for="pt${i}">第${p.order}站 ${p.name}</label>`;
         const cb = row.querySelector('input');
         cb.addEventListener('change', () => {
-          if(cb.checked){
-            const m = new google.maps.Marker({ map, position: {lat:p.lat,lng:p.lng} });
-            m.addListener('click', () => { infoWindow.setContent(p.name); infoWindow.open(map,m); });
+          if (cb.checked) {
+            const m = new google.maps.Marker({ map, position: { lat: p.lat, lng: p.lng } });
+            m.addListener('click', () => { infoWindow.setContent(p.name); infoWindow.open(map, m); });
             markers[i] = m;
             map.setCenter(m.getPosition());
-          } else if(markers[i]) markers[i].setMap(null);
+          } else if (markers[i]) markers[i].setMap(null);
         });
         list.appendChild(row);
       });
     }
 
-    function drawPolylinePath(path) { 
-      if(polyline) polyline.setMap(null); 
-      polyline=new google.maps.Polyline({ path, map, strokeColor:'#FF5722', strokeWeight:4 }); 
+    function drawPolylinePath(path) {
+      if (polyline) polyline.setMap(null);
+      polyline = new google.maps.Polyline({ path, map, strokeColor: '#FF5722', strokeWeight: 4 });
     }
 
-    function clearMapObjects() { 
-      markers.forEach(m=>m&&m.setMap(null)); 
-      markers=[]; 
-      if(polyline) polyline.setMap(null); 
+    function clearMapObjects() {
+      markers.forEach(m => m && m.setMap(null));
+      markers = [];
+      if (polyline) polyline.setMap(null);
     }
 
-    function resamplePath(path, interval) { 
-      if(path.length<2) return path; 
-      const result=[path[0]]; 
-      let acc=0; 
-      for(let i=1;i<path.length;i++){ 
-        const p0=path[i-1], p1=path[i]; 
-        const segLen=google.maps.geometry.spherical.computeDistanceBetween(p0,p1); 
-        let dist=interval-acc; 
-        while(dist<segLen){ 
-          const frac=dist/segLen; 
-          result.push(google.maps.geometry.spherical.interpolate(p0,p1,frac)); 
-          dist+=interval; 
-        } 
-        acc=(acc+segLen)%interval; 
+    function resamplePath(path, interval) {
+      if (path.length < 2) return path;
+      const result = [path[0]];
+      let acc = 0;
+      for (let i = 1; i < path.length; i++) {
+        const p0 = path[i - 1], p1 = path[i];
+        const segLen = google.maps.geometry.spherical.computeDistanceBetween(p0, p1);
+        let dist = interval - acc;
+        while (dist < segLen) {
+          const frac = dist / segLen;
+          result.push(google.maps.geometry.spherical.interpolate(p0, p1, frac));
+          dist += interval;
+        }
+        acc = (acc + segLen) % interval;
         result.push(p1);
-      } 
-      return result; 
+      }
+      return result;
     }
 
-    function planPolyline(){
-      stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[]; 
-      const pts=stationData.filter((s,i)=>document.getElementById('pt'+i).checked).map(s=>s.position); 
-      if(pts.length<2){ alert('請至少選擇兩個站點'); return; } 
-      new google.maps.DirectionsService().route({ origin:pts[0], destination:pts.at(-1), waypoints:pts.slice(1,-1).map(p=>({location:p})), travelMode:'BICYCLING' }, (res,status) => { 
-        if(status==='OK'){ 
-          polylinePath=resamplePath(res.routes[0].overview_path,RESAMPLE_INTERVAL); 
-          drawPolylinePath(polylinePath); 
-          miniPolyline.setPath(polylinePath); 
-          stationData.forEach((s,i)=>{ 
-            if(document.getElementById('pt'+i).checked){ 
-              const mm=new google.maps.Marker({ map:miniMap, position:s.position, title:s.name, label:{text:s.name, color:'black', fontSize:'10px'} }); 
+    function planPolyline() {
+      stationMarkersMini.forEach(m => m.setMap(null)); stationMarkersMini = [];
+      const pts = stationData.filter((s, i) => document.getElementById('pt' + i).checked).map(s => s.position);
+      if (pts.length < 2) { alert('請至少選擇兩個站點'); return; }
+      new google.maps.DirectionsService().route({
+        origin: pts[0],
+        destination: pts.at(-1),
+        waypoints: pts.slice(1, -1).map(p => ({ location: p })),
+        travelMode: 'BICYCLING'
+      }, (res, status) => {
+        if (status === 'OK') {
+          polylinePath = resamplePath(res.routes[0].overview_path, RESAMPLE_INTERVAL);
+          drawPolylinePath(polylinePath);
+          miniPolyline.setPath(polylinePath);
+          stationData.forEach((s, i) => {
+            if (document.getElementById('pt' + i).checked) {
+              const mm = new google.maps.Marker({
+                map: miniMap,
+                position: s.position,
+                title: s.name,
+                label: { text: s.name, color: 'black', fontSize: '10px' }
+              });
               stationMarkersMini.push(mm);
-            } 
-          }); 
-          document.getElementById('toggleViewBtn').style.display='inline-block';
-          document.getElementById('autoPlayBtn').style.display='none';
+            }
+          });
+          document.getElementById('toggleViewBtn').style.display = 'inline-block';
+          document.getElementById('autoPlayBtn').style.display = 'none';
 
           createMiniMapClickableMarkers();
           fetchElevationAndDrawChart(polylinePath);
+          // 不顯示坡度圖，等切換街景時顯示
+          document.getElementById('miniMapContainer').style.display = 'none';
 
-        } else alert('路線繪製失敗:'+status); 
+        } else alert('路線繪製失敗:' + status);
       });
     }
 
-    function selectAll(){ 
-      document.querySelectorAll('#pointList input[type=checkbox]').forEach(cb=>{cb.checked=true;cb.dispatchEvent(new Event('change'));}); 
+    function selectAll() {
+      document.querySelectorAll('#pointList input[type=checkbox]').forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change')); });
     }
-    function clearAll(){ 
-      document.querySelectorAll('#pointList input[type=checkbox]').forEach(cb=>{cb.checked=false;cb.dispatchEvent(new Event('change'));}); 
+    function clearAll() {
+      document.querySelectorAll('#pointList input[type=checkbox]').forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event('change')); });
     }
 
-    async function drawFromPasted(){
-      stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[]; clearMapObjects(); 
-      const raw=document.getElementById('coordTextarea').value.trim(); 
-      const lines=raw.split('\n').filter(l=>l.trim()); 
-      const coords=lines.map(l=>{ 
-        const m=l.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/); 
-        return m?{lat:+m[1],lng:+m[2]}:null; 
-      }).filter(c=>c); 
-      if(coords.length<2){alert('請至少提供兩個座標');return;} 
-      coords.forEach((c,i)=>{ 
-        const mk=new google.maps.Marker({map,position:c}); 
-        mk.addListener('click',()=>{infoWindow.setContent('手動點#'+(i+1));infoWindow.open(map,mk);}); 
-        markers.push(mk); 
-      }); 
-      new google.maps.DirectionsService().route({ origin:coords[0], destination:coords.at(-1), waypoints:coords.slice(1,-1).map(c=>({location:c})), travelMode:'BICYCLING' }, (res,status)=>{ 
-        if(status==='OK'){ 
-          polylinePath=resamplePath(res.routes[0].overview_path,RESAMPLE_INTERVAL); 
-          drawPolylinePath(polylinePath); 
-          miniPolyline.setPath(polylinePath); 
-          document.getElementById('toggleViewBtn').style.display='inline-block';
-          document.getElementById('autoPlayBtn').style.display='none';
+    async function drawFromPasted() {
+      stationMarkersMini.forEach(m => m.setMap(null)); stationMarkersMini = []; clearMapObjects();
+      const raw = document.getElementById('coordTextarea').value.trim();
+      const lines = raw.split('\n').filter(l => l.trim());
+      const coords = lines.map(l => {
+        const m = l.match(/([\d\.\-]+)[^\d\.\-]+([\d\.\-]+)/);
+        return m ? { lat: +m[1], lng: +m[2] } : null;
+      }).filter(c => c);
+      if (coords.length < 2) { alert('請至少提供兩個座標'); return; }
+      coords.forEach((c, i) => {
+        const mk = new google.maps.Marker({ map, position: c });
+        mk.addListener('click', () => { infoWindow.setContent('手動點#' + (i + 1)); infoWindow.open(map, mk); });
+        markers.push(mk);
+      });
+      new google.maps.DirectionsService().route({
+        origin: coords[0],
+        destination: coords.at(-1),
+        waypoints: coords.slice(1, -1).map(c => ({ location: c })),
+        travelMode: 'BICYCLING'
+      }, (res, status) => {
+        if (status === 'OK') {
+          polylinePath = resamplePath(res.routes[0].overview_path, RESAMPLE_INTERVAL);
+          drawPolylinePath(polylinePath);
+          miniPolyline.setPath(polylinePath);
+          document.getElementById('toggleViewBtn').style.display = 'inline-block';
+          document.getElementById('autoPlayBtn').style.display = 'none';
 
           createMiniMapClickableMarkers();
           fetchElevationAndDrawChart(polylinePath);
+          // 不顯示坡度圖，等切換街景時顯示
+          document.getElementById('miniMapContainer').style.display = 'none';
 
-        } else alert('路線規劃失敗:'+status); 
+        } else alert('路線規劃失敗:' + status);
       });
     }
 
-    function drawFromAB(){
-      stationMarkersMini.forEach(m=>m.setMap(null)); stationMarkersMini=[]; clearMapObjects(); 
-      new google.maps.DirectionsService().route({ origin:document.getElementById('pointA').value, destination:document.getElementById('pointB').value, travelMode:'BICYCLING' }, (res,status)=>{ 
-        if(status==='OK'){ 
-          polylinePath=resamplePath(res.routes[0].overview_path,RESAMPLE_INTERVAL); 
-          drawPolylinePath(polylinePath); 
-          miniPolyline.setPath(polylinePath); 
-          document.getElementById('toggleViewBtn').style.display='inline-block';
-          document.getElementById('autoPlayBtn').style.display='none';
+    function drawFromAB() {
+      stationMarkersMini.forEach(m => m.setMap(null)); stationMarkersMini = []; clearMapObjects();
+      new google.maps.DirectionsService().route({
+        origin: document.getElementById('pointA').value,
+        destination: document.getElementById('pointB').value,
+        travelMode: 'BICYCLING'
+      }, (res, status) => {
+        if (status === 'OK') {
+          polylinePath = resamplePath(res.routes[0].overview_path, RESAMPLE_INTERVAL);
+          drawPolylinePath(polylinePath);
+          miniPolyline.setPath(polylinePath);
+          document.getElementById('toggleViewBtn').style.display = 'inline-block';
+          document.getElementById('autoPlayBtn').style.display = 'none';
 
           createMiniMapClickableMarkers();
           fetchElevationAndDrawChart(polylinePath);
+          // 不顯示坡度圖，等切換街景時顯示
+          document.getElementById('miniMapContainer').style.display = 'none';
 
-        } else alert('搜尋失敗:'+status); 
+        } else alert('搜尋失敗:' + status);
       });
     }
 
-    function toggleView(){
+    function toggleView() {
       const autoBtn = document.getElementById('autoPlayBtn');
-      if(currentMode==='map'){
-        document.getElementById('map').style.display='none';
-        document.getElementById('pano').style.display='block';
-        document.getElementById('miniMapContainer').style.display='block';
+      if (currentMode === 'map') {
+        document.getElementById('map').style.display = 'none';
+        document.getElementById('pano').style.display = 'block';
+        document.getElementById('miniMapContainer').style.display = 'block'; // 顯示小地圖與坡度圖
         panorama.setVisible(true);
         panorama.setPosition(polylinePath[0]);
         updateMiniMap();
-        currentMode='street';
+        currentMode = 'street';
         autoBtn.style.display = 'inline-block';
       } else {
-        document.getElementById('pano').style.display='none';
-        document.getElementById('miniMapContainer').style.display='none';
-        document.getElementById('map').style.display='block';
+        document.getElementById('pano').style.display = 'none';
+        document.getElementById('miniMapContainer').style.display = 'none'; // 隱藏小地圖與坡度圖
+        document.getElementById('map').style.display = 'block';
         panorama.setVisible(false);
-        currentMode='map';
+        currentMode = 'map';
         autoBtn.style.display = 'none';
         if (autoPlayTimer) {
           clearInterval(autoPlayTimer);
@@ -352,45 +395,45 @@
       }
     }
 
-    function handleKey(e){ 
-      if(currentMode!=='street'||!polylinePath.length) return; 
-      if(e.key==='ArrowUp'||e.key.toLowerCase()==='w') moveAlongPath(1); 
-      if(e.key==='ArrowDown'||e.key.toLowerCase()==='s') moveAlongPath(-1); 
-      if(e.key.toLowerCase()==='a') panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading-15}); 
-      if(e.key.toLowerCase()==='d') panorama.setPov({...panorama.getPov(),heading:panorama.getPov().heading+15}); 
-      updateMiniMap(); 
+    function handleKey(e) {
+      if (currentMode !== 'street' || !polylinePath.length) return;
+      if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') moveAlongPath(1);
+      if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') moveAlongPath(-1);
+      if (e.key.toLowerCase() === 'a') panorama.setPov({ ...panorama.getPov(), heading: panorama.getPov().heading - 15 });
+      if (e.key.toLowerCase() === 'd') panorama.setPov({ ...panorama.getPov(), heading: panorama.getPov().heading + 15 });
+      updateMiniMap();
     }
 
-    function moveAlongPath(step){
-      const old=stepIndex;
-      stepIndex=Math.min(Math.max(0,stepIndex+step),polylinePath.length-1);
-      const p0=polylinePath[old], p1=polylinePath[stepIndex];
-      if(p0&&p1){
-        const hd=google.maps.geometry.spherical.computeHeading(p0,p1);
-        panorama.setPov({heading:hd,pitch:panorama.getPov().pitch});
+    function moveAlongPath(step) {
+      const old = stepIndex;
+      stepIndex = Math.min(Math.max(0, stepIndex + step), polylinePath.length - 1);
+      const p0 = polylinePath[old], p1 = polylinePath[stepIndex];
+      if (p0 && p1) {
+        const hd = google.maps.geometry.spherical.computeHeading(p0, p1);
+        panorama.setPov({ heading: hd, pitch: panorama.getPov().pitch });
       }
       panorama.setPosition(polylinePath[stepIndex]);
       updateMiniMap();
       updateElevationCursor();
     }
 
-    function updateMiniMap(){
-      const pos=panorama.getPosition();
+    function updateMiniMap() {
+      const pos = panorama.getPosition();
       miniMap.setCenter(pos);
-      miniMap.setHeading(panorama.getPov().heading||0);
+      miniMap.setHeading(panorama.getPov().heading || 0);
       miniMarker.setPosition(pos);
-      miniMarker.setIcon({ path:google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:5, rotation:panorama.getPov().heading||0 });
+      miniMarker.setIcon({ path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 5, rotation: panorama.getPov().heading || 0 });
       miniPolyline.setPath(polylinePath);
     }
 
-    function startAutoPlay(){
-      const btn=document.getElementById('autoPlayBtn');
-      if(autoPlayTimer){
-        clearInterval(autoPlayTimer); autoPlayTimer=null; btn.textContent='開始自動導航';
+    function startAutoPlay() {
+      const btn = document.getElementById('autoPlayBtn');
+      if (autoPlayTimer) {
+        clearInterval(autoPlayTimer); autoPlayTimer = null; btn.textContent = '開始自動導航';
       } else {
-        btn.textContent='停止自動導航';
-        autoPlayTimer=setInterval(()=>{
-          if(stepIndex<polylinePath.length-1){
+        btn.textContent = '停止自動導航';
+        autoPlayTimer = setInterval(() => {
+          if (stepIndex < polylinePath.length - 1) {
             moveAlongPath(1);
           } else startAutoPlay();
         }, 1000);
@@ -425,6 +468,7 @@
           document.getElementById('map').style.display = 'none';
           document.getElementById('pano').style.display = 'block';
           document.getElementById('miniMapContainer').style.display = 'block';
+
           document.getElementById('autoPlayBtn').style.display = 'inline-block';
           document.getElementById('toggleViewBtn').style.display = 'inline-block';
 
@@ -460,7 +504,7 @@
     function getPathLength(path) {
       let total = 0;
       for (let i = 1; i < path.length; i++) {
-        total += google.maps.geometry.spherical.computeDistanceBetween(path[i-1], path[i]);
+        total += google.maps.geometry.spherical.computeDistanceBetween(path[i - 1], path[i]);
       }
       return total;
     }
@@ -532,7 +576,7 @@
 
       let distanceSoFar = 0;
       for (let i = 1; i <= stepIndex && i < polylinePath.length; i++) {
-        distanceSoFar += google.maps.geometry.spherical.computeDistanceBetween(polylinePath[i-1], polylinePath[i]);
+        distanceSoFar += google.maps.geometry.spherical.computeDistanceBetween(polylinePath[i - 1], polylinePath[i]);
       }
       const totalDistance = getPathLength(polylinePath);
       const percent = distanceSoFar / totalDistance;
