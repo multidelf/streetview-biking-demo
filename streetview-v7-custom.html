@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>一騎出發吧｜街景模擬與坡度折線圖</title>
+  <title>一騎出發吧｜街景騎乘模擬器坡度計 v1.0.0</title>
   <style>
     html, body {
       margin: 0; padding: 0; height: 100%; overflow: hidden;
@@ -64,7 +64,9 @@
   <div id="controlPanel">
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
       <img src="logo.jpg" alt="Logo" style="width: 32px; height: 32px;" />
-      <span style="font-size: 18px; font-weight: bold;">一騎出發吧｜街景騎乘模擬器坡度計</span>
+      <span id="appTitle" style="font-size: 18px; font-weight: bold;">
+        一騎出發吧｜街景騎乘模擬器坡度計 v1.0.0
+      </span>
     </div>
     <div style="background: rgba(255, 255, 255, 0.9); padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
       <strong>操作簡介：</strong><br />
@@ -150,6 +152,44 @@
         alert('無法載入路線列表，請稍後再試');
         return [];
       }
+    }
+
+    function setupAutocomplete() {
+      const inputA = document.getElementById('pointA');
+      const inputB = document.getElementById('pointB');
+
+      if (!inputA || !inputB) return;
+
+      const autocompleteA = new google.maps.places.Autocomplete(inputA);
+      const autocompleteB = new google.maps.places.Autocomplete(inputB);
+
+      autocompleteA.addListener('place_changed', () => {
+        const place = autocompleteA.getPlace();
+        if (!place.geometry) return;
+        if (markers.A) markers.A.setMap(null);
+        markers.A = new google.maps.Marker({ map, position: place.geometry.location });
+        infoWindow.setContent('起點：' + place.name);
+        infoWindow.open(map, markers.A);
+        map.setCenter(place.geometry.location);
+        toggleSearchBtn();
+      });
+
+      autocompleteB.addListener('place_changed', () => {
+        const place = autocompleteB.getPlace();
+        if (!place.geometry) return;
+        if (markers.B) markers.B.setMap(null);
+        markers.B = new google.maps.Marker({ map, position: place.geometry.location });
+        infoWindow.setContent('終點：' + place.name);
+        infoWindow.open(map, markers.B);
+        map.setCenter(place.geometry.location);
+        toggleSearchBtn();
+      });
+    }
+
+    function toggleSearchBtn() {
+      const a = document.getElementById('pointA').value.trim();
+      const b = document.getElementById('pointB').value.trim();
+      document.getElementById('searchBtn').disabled = !(a && b);
     }
 
     async function initMap() {
