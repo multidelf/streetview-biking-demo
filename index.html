@@ -80,7 +80,7 @@
     // 1. initMap：初始化地圖、街景、小地圖與 UI
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), { center:{lat:24.15,lng:120.68}, zoom:13 });
-      panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), { position:{lat:24.15,lng:120.68}, pov:{heading:0,pitch:0}, visible:false });
+      panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), { position:{lat:24.15,lng:120.68}, pov:{heading:0,pitch:0}, visible:false, motionTracking: false,motionTrackingControl: false });
       map.setStreetView(panorama);
       miniMap = new google.maps.Map(document.getElementById('miniMap'), { center:{lat:24.15,lng:120.68}, zoom:16, disableDefaultUI:true });
       miniMarker = new google.maps.Marker({ map:miniMap, position:{lat:24.15,lng:120.68}, icon:{ path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:5, rotation:0 } });
