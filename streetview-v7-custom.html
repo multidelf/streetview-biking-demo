@@ -15,6 +15,7 @@
     .checkbox-row input[type=checkbox] { margin-right:8px; }
     #controlPanel.collapsed { transform: translateX(-95%); }
     #miniMap { position:absolute; bottom:10px; right:10px; width:clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; border:2px solid #888; z-index:12; }
+    #elevationChartContainerstyle { width: clamp(200px, 25vw, 400px); aspect-ratio: 2 / 1; position: absolute; bottom: 220px; right: 10px; z-index: 12; background: white; border: 2px solid #888; padding: 6px; }
     #togglePanelBtn { position: absolute; top: 0; right: -10px; height: 100%; width: clamp(20px, 5vw, 30px); background: #4CAF50; color: white;  border: none;  border-radius: 0 5px 5px 0;  padding: 0 6px;  cursor: pointer;  writing-mode: vertical-rl;  text-orientation: mixed;  z-index: 11; }
   </style>
 </head>
@@ -80,6 +81,8 @@
   <div id="map"></div>
   <div id="pano"></div>
   <div id="miniMap"></div>
+  <div id="elevationChartContainer" 
+  <canvas id="elevationChart" width="400" height="150"></canvas></div>
 
   <!-- Google Maps API -->
   <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3MsVlR7h6MsYf1Xjw02BPwB3r95wXsYk&libraries=places,geometry&callback=initMap"></script>
