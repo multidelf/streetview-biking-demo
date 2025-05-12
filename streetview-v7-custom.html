@@ -312,22 +312,25 @@ function fetchElevationAndDrawChart(polylinePath) {
 
   elevator.getElevationAlongPath({
     path: polylinePath,
-    samples: 256 // 根據路線長度決定解析度
+    samples: 256
   }).then(response => {
     const elevations = response.results;
 
-// ✅ 顯示高程圖容器
-document.getElementById('elevationChartContainer').style.display = 'block';
-    
-// 取得高程與距離
+    // 顯示高程圖容器
+    document.getElementById('elevationChartContainer').style.display = 'block';
+
+    // 取得高程與距離
     const elevationData = elevations.map(e => e.elevation);
-    const distanceData = elevations.map((_, i) => (i * getPathLength(polylinePath) / 256).toFixed(0));
+    const distanceData = elevations.map((_, i) =>
+      (i * getPathLength(polylinePath) / 256).toFixed(0)
+    );
 
     drawElevationChart(distanceData, elevationData);
   }).catch(err => {
     console.error('高程查詢失敗:', err);
   });
 }
+
 
 // 用來計算路線總長度
 function getPathLength(path) {
@@ -338,13 +341,9 @@ function getPathLength(path) {
   return total;
 }
 
-// 用 Chart.js 繪製圖表
 function drawElevationChart(labels, data) {
   const ctx = document.getElementById('elevationChart').getContext('2d');
-
-  // 如果已存在就先清除
-  if (window.elevationChart) window.elevationChart.destroy();
-
+  if (window.elevationChart) window.elevationChart.destroy(); // 清除舊圖
   window.elevationChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -372,8 +371,7 @@ function drawElevationChart(labels, data) {
       }
     }
   });
-}
-    
+}    
   </script>
 </body>
 </html>
